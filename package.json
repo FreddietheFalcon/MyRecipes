@@ -1,5 +1,5 @@
 {
-  "name": "mern-thinkboard",
+  "name": "MyRecipes",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/FreddietheFalcon/mern-thinkboard.git"
+    "url": "git+https://github.com/FreddietheFalcon/MyRecipes.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/FreddietheFalcon/mern-thinkboard/issues"
+    "url": "https://github.com/FreddietheFalcon/MyRecipes/issues"
   },
-  "homepage": "https://github.com/FreddietheFalcon/mern-thinkboard#readme"
+  "homepage": "https://github.com/FreddietheFalcon/MyRecipes#readme"
 }
