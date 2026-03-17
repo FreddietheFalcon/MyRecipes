@@ -2,33 +2,37 @@ import mongoose from "mongoose";
 
 const recipeSchema = new mongoose.Schema(
   {
-    status: {
-      type: String,
-      enum: ["keeper", "want_to_try"],
-      default: "want_to_try",
-    },
-    name: {
+    title: {
       type: String,
       required: true,
     },
-    servings: {
-      type: Number,
+    content: {
+      type: String,
+      required: true,
     },
-    ingredients: [
-      {
-        name: { type: String },
-        amount: { type: String },
-      },
-    ],
-    steps: [String],
-    comments: [
-      {
-        text: { type: String },
-        createdAt: { type: Date, default: Date.now },
-      },
-    ],
+    // --- Soft-delete fields ---
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
+);
+
+// TTL index: MongoDB will automatically and permanently remove a document
+// 30 days (2,592,000 seconds) after its deletedAt timestamp is set.
+// The partialFilterExpression ensures this index only applies to soft-deleted
+// documents, so active recipes with deletedAt: null are never affected.
+recipeSchema.index(
+  { deletedAt: 1 },
+  {
+    expireAfterSeconds: 2592000, // 30 days
+    partialFilterExpression: { isDeleted: true },
+  }
 );
 
 const Recipe = mongoose.model("Recipe", recipeSchema);
