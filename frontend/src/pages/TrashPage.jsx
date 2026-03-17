@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
-import { ArrowLeftIcon, LoaderIcon, RotateCcwIcon, Trash2Icon } from "lucide-react";
+import { LoaderIcon, RotateCcwIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../lib/axios";
 import { formatDate } from "../lib/utils";
@@ -22,7 +22,6 @@ const TrashPage = () => {
         setLoading(false);
       }
     };
-
     fetchTrash();
   }, []);
 
@@ -40,114 +39,219 @@ const TrashPage = () => {
     }
   };
 
-  // Badge color based on days remaining urgency
-  const urgencyClass = (days) => {
-    if (days <= 3)  return "badge badge-error";
-    if (days <= 7)  return "badge badge-warning";
-    return "badge badge-ghost";
+  const daysColor = (days) => {
+    if (days <= 3) return { badge: "#e5333a", bg: "#fff0f0", text: "#e5333a" };
+    if (days <= 7) return { badge: "#e67e22", bg: "#fff3e0", text: "#e67e22" };
+    return { badge: "#5aaa10", bg: "#e8f9d0", text: "#5aaa10" };
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-base-200 flex items-center justify-center">
-        <LoaderIcon className="animate-spin size-10" />
+      <div style={{ minHeight: "100vh", background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <LoaderIcon style={{ width: 36, height: 36, animation: "spin 1s linear infinite", color: "#7ed321" }} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-base-200">
-      <div className="container mx-auto p-4 py-8">
-        <div className="max-w-2xl mx-auto">
+    <div style={{
+      fontFamily: "'Nunito', sans-serif",
+      background: "#f5f5f5",
+      minHeight: "100vh",
+      display: "flex",
+      alignItems: "flex-start",
+      justifyContent: "center",
+      padding: "24px",
+    }}>
+      <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Pacifico&display=swap" rel="stylesheet" />
 
+      <div style={{ display: "flex", gap: "24px", width: "100%", maxWidth: "1000px" }}>
+
+        {/* ── Sidebar ── */}
+        <aside style={{
+          background: "#fff",
+          border: "2.5px solid #7ed321",
+          borderRadius: "22px",
+          width: "220px",
+          flexShrink: 0,
+          padding: "32px 24px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+          boxShadow: "0 4px 24px rgba(126,211,33,0.13)",
+          alignSelf: "flex-start",
+          position: "sticky",
+          top: "24px",
+        }}>
+          {/* Brand */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "28px" }}>
+            <div style={{
+              width: "42px", height: "42px", borderRadius: "50%",
+              background: "#7ed321",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontFamily: "'Pacifico', cursive",
+              color: "#fff", fontSize: "15px",
+              boxShadow: "0 3px 10px rgba(126,211,33,.35)",
+            }}>R</div>
+            <span style={{ fontSize: "18px", fontWeight: 800, color: "#2c3e50" }}>My Recipes</span>
+          </div>
+
+          {/* Nav links */}
+          {[
+            { label: "🔍 Search",    to: "/" },
+            { label: "⭐ Keepers",   to: "/" },
+            { label: "🕐 Save for later", to: "/" },
+            { label: "➕ Add Recipe", to: "/create" },
+            { label: "🥫 Inventory", to: "/inventory" },
+          ].map(({ label, to }) => (
+            <Link key={label} to={to} style={{
+              display: "block", padding: "9px 12px", borderRadius: "10px",
+              color: "#b0b8c1", fontSize: "15px", fontWeight: 600,
+              textDecoration: "none", transition: "background .2s, color .2s",
+            }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#e8f9d0"; e.currentTarget.style.color = "#5aaa10"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#b0b8c1"; }}
+            >{label}</Link>
+          ))}
+
+          {/* Recover Deleted Recipes — active/highlighted */}
+          <Link to="/trash" style={{
+            display: "block", padding: "9px 12px", borderRadius: "10px",
+            background: "#e8f9d0", color: "#5aaa10",
+            fontSize: "15px", fontWeight: 700,
+            textDecoration: "none", marginTop: "8px",
+            border: "1.5px solid #7ed321",
+          }}>
+            ♻️ Recover Deleted
+          </Link>
+
+          <Link to="/" style={{
+            display: "block", padding: "9px 12px", borderRadius: "10px",
+            color: "#b0b8c1", fontSize: "15px", fontWeight: 600,
+            textDecoration: "none",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#e8f9d0"; e.currentTarget.style.color = "#5aaa10"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#b0b8c1"; }}
+          >🚪 Logout</Link>
+        </aside>
+
+        {/* ── Main ── */}
+        <main style={{
+          flex: 1,
+          background: "#fff",
+          border: "2.5px solid #7ed321",
+          borderRadius: "22px",
+          padding: "36px 40px 48px",
+          boxShadow: "0 4px 24px rgba(126,211,33,0.13)",
+        }}>
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <Link to="/" className="btn btn-ghost">
-              <ArrowLeftIcon className="h-5 w-5" />
-              Back to Home
-            </Link>
-            <div className="flex items-center gap-2 text-base-content/60">
-              <Trash2Icon className="size-5" />
-              <span className="font-semibold">Trash</span>
-            </div>
+          <div style={{ marginBottom: "8px" }}>
+            <h1 style={{ fontFamily: "'Pacifico', cursive", fontSize: "26px", color: "#5aaa10" }}>
+              ♻️ Recover Deleted Recipes
+            </h1>
           </div>
-
-          {/* Info banner */}
-          <div className="alert mb-6">
-            <span className="text-sm">
-              Deleted recipes are kept for <strong>30 days</strong> before being
-              permanently removed. Restore a recipe any time before it expires.
-            </span>
-          </div>
+          <p style={{ fontSize: "13px", color: "#b0b8c1", fontWeight: 600, marginBottom: "24px" }}>
+            Deleted recipes are kept for <strong style={{ color: "#2c3e50" }}>30 days</strong> before being permanently removed. Restore any time before expiry.
+          </p>
 
           {/* Empty state */}
           {trashedRecipes.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 space-y-4 text-center">
-              <div className="bg-base-content/10 rounded-full p-8">
-                <Trash2Icon className="size-10 text-base-content/40" />
-              </div>
-              <h3 className="text-2xl font-bold">Trash is empty</h3>
-              <p className="text-base-content/60">
-                Deleted recipes will appear here for 30 days.
-              </p>
+            <div style={{ textAlign: "center", padding: "64px 20px", color: "#b0b8c1" }}>
+              <div style={{ fontSize: "52px", marginBottom: "16px" }}>🗑️</div>
+              <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#2c3e50", marginBottom: "8px" }}>Trash is empty</h3>
+              <p style={{ fontSize: "14px", fontWeight: 600 }}>Deleted recipes will appear here for 30 days.</p>
+              <Link to="/" style={{
+                display: "inline-block", marginTop: "20px",
+                background: "#7ed321", color: "#fff",
+                borderRadius: "50px", padding: "11px 28px",
+                fontWeight: 800, fontSize: "14px", textDecoration: "none",
+                boxShadow: "0 3px 12px rgba(126,211,33,.35)",
+              }}>← Back to Recipes</Link>
             </div>
           )}
 
-          {/* Trashed recipe cards */}
+          {/* Recipe cards */}
           {trashedRecipes.length > 0 && (
-            <div className="flex flex-col gap-4">
-              {trashedRecipes.map((recipe) => (
-                <div
-                  key={recipe._id}
-                  className="card bg-base-100 border-t-4 border-error/40 opacity-80"
-                >
-                  <div className="card-body">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <h3 className="card-title text-base-content line-through decoration-error/50">
-                          {recipe.title}
-                        </h3>
-                        <p className="text-base-content/50 line-clamp-2 mt-1 text-sm">
-                          {recipe.content}
-                        </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              {trashedRecipes.map((recipe) => {
+                const colors = daysColor(recipe.daysRemaining);
+                return (
+                  <div key={recipe._id} style={{
+                    border: "1.5px solid #e4e9ef",
+                    borderLeft: `4px solid ${colors.badge}`,
+                    borderRadius: "16px",
+                    padding: "18px 22px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "16px",
+                    background: "#fafffe",
+                    transition: "box-shadow .2s",
+                  }}>
+                    {/* Left: info */}
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{
+                        fontSize: "15px", fontWeight: 700, color: "#9aa0a8",
+                        textDecoration: "line-through", marginBottom: "4px",
+                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                      }}>
+                        {recipe.title}
                       </div>
-
-                      {/* Restore button */}
-                      <button
-                        className="btn btn-outline btn-success btn-sm shrink-0"
-                        disabled={restoringId === recipe._id}
-                        onClick={() => handleRestore(recipe._id, recipe.title)}
-                      >
-                        {restoringId === recipe._id ? (
-                          <LoaderIcon className="animate-spin size-4" />
-                        ) : (
-                          <>
-                            <RotateCcwIcon className="size-4" />
-                            Restore
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    {/* Footer: deleted date + days remaining */}
-                    <div className="card-actions justify-between items-center mt-3">
-                      <span className="text-xs text-base-content/40">
+                      <div style={{ fontSize: "12px", color: "#b0b8c1", fontWeight: 600 }}>
                         Deleted {formatDate(new Date(recipe.deletedAt))}
-                      </span>
-                      <span className={urgencyClass(recipe.daysRemaining)}>
-                        {recipe.daysRemaining === 0
-                          ? "Deleting soon"
-                          : `${recipe.daysRemaining}d left`}
-                      </span>
+                      </div>
                     </div>
+
+                    {/* Middle: days remaining badge */}
+                    <div style={{
+                      background: colors.bg,
+                      color: colors.text,
+                      borderRadius: "50px",
+                      padding: "4px 14px",
+                      fontSize: "11px", fontWeight: 800,
+                      textTransform: "uppercase", letterSpacing: ".04em",
+                      whiteSpace: "nowrap", flexShrink: 0,
+                    }}>
+                      {recipe.daysRemaining === 0 ? "Expires today" : `${recipe.daysRemaining}d left`}
+                    </div>
+
+                    {/* Right: Restore button */}
+                    <button
+                      disabled={restoringId === recipe._id}
+                      onClick={() => handleRestore(recipe._id, recipe.title)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "7px",
+                        background: "#7ed321", color: "#fff",
+                        border: "none", borderRadius: "50px",
+                        padding: "10px 20px",
+                        fontFamily: "'Nunito', sans-serif",
+                        fontSize: "13px", fontWeight: 800,
+                        cursor: restoringId === recipe._id ? "not-allowed" : "pointer",
+                        opacity: restoringId === recipe._id ? 0.7 : 1,
+                        boxShadow: "0 3px 10px rgba(126,211,33,.3)",
+                        flexShrink: 0,
+                        transition: "background .2s",
+                      }}
+                      onMouseEnter={e => { if (restoringId !== recipe._id) e.currentTarget.style.background = "#5aaa10"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "#7ed321"; }}
+                    >
+                      {restoringId === recipe._id
+                        ? <LoaderIcon style={{ width: 14, height: 14, animation: "spin 1s linear infinite" }} />
+                        : <RotateCcwIcon style={{ width: 14, height: 14 }} />
+                      }
+                      Restore
+                    </button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
-
-        </div>
+        </main>
       </div>
+
+      <style>{`
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 };
