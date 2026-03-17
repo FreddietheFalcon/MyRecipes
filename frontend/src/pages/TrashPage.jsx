@@ -124,7 +124,7 @@ const TrashPage = () => {
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                     }}>
-                      {recipe.title}
+                      {recipe.name}
                     </div>
                     <div style={{ fontSize: 12, color: "var(--gray)", fontWeight: 600 }}>
                       🗑 Deleted {formatDate(new Date(recipe.deletedAt))}
@@ -150,7 +150,7 @@ const TrashPage = () => {
                   {/* Right: Restore button */}
                   <button
                     disabled={isRestoring}
-                    onClick={() => handleRestore(recipe._id, recipe.title)}
+                    onClick={() => handleRestore(recipe._id, recipe.name)}
                     style={{
                       display: "flex", alignItems: "center", gap: 7,
                       background: "#7ed321", color: "#fff",
