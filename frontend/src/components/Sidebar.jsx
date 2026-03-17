@@ -1,42 +1,128 @@
 import { Link, useLocation } from "react-router";
 
+const NAV_ITEMS = [
+  { label: "Search",         to: "/",           icon: "🔍" },
+  { label: "Keepers",        to: "/?tab=keeper",       icon: "⭐" },
+  { label: "Save for Later", to: "/?tab=want_to_try",  icon: "🕐" },
+  { label: "Add Recipe",     to: "/create",     icon: "➕" },
+  { label: "Inventory",      to: "/inventory",  icon: "🥫" },
+  { label: "Recover Deleted",to: "/trash",      icon: "♻️" },
+];
+
 const Sidebar = () => {
-  const location = useLocation();
+  const { pathname, search } = useLocation();
+  const fullPath = pathname + search;
 
-  const navItems = [
-    { label: "Search",        path: "/",           exact: true },
-    { label: "Keepers",       path: "/?tab=keeper" },
-    { label: "Save for Later",path: "/?tab=want_to_try" },
-    { label: "Add Recipe",    path: "/create" },
-    { label: "Inventory",     path: "/inventory" },
-  ];
-
-  const isActive = (path, exact) => {
-    if (exact) return location.pathname === "/" && !location.search;
-    if (path.startsWith("/?")) return location.pathname === "/" && location.search === path.slice(1);
-    return location.pathname === path;
+  const isActive = (to) => {
+    if (to === "/") return pathname === "/" && !search.includes("tab=");
+    if (to.includes("?")) return fullPath === to;
+    return pathname === to || pathname.startsWith(to + "/");
   };
 
   return (
-    <aside className="sidebar">
-      <div className="brand">
-        <div className="logo-circle">R</div>
-        <span className="brand-name">My Recipes</span>
+    <aside style={{
+      background: "#fff",
+      border: "2.5px solid #7ed321",
+      borderRadius: "22px",
+      width: "220px",
+      flexShrink: 0,
+      padding: "32px 20px",
+      display: "flex",
+      flexDirection: "column",
+      gap: "4px",
+      boxShadow: "0 4px 24px rgba(126,211,33,0.13)",
+      alignSelf: "flex-start",
+      position: "sticky",
+      top: "24px",
+    }}>
+
+      {/* Brand */}
+      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "28px" }}>
+        <div style={{
+          width: "42px", height: "42px", borderRadius: "50%",
+          background: "#7ed321",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontFamily: "'Pacifico', cursive",
+          color: "#fff", fontSize: "15px",
+          boxShadow: "0 3px 10px rgba(126,211,33,.35)",
+          flexShrink: 0,
+        }}>R</div>
+        <span style={{ fontSize: "18px", fontWeight: 800, color: "#2c3e50", fontFamily: "'Nunito', sans-serif" }}>
+          My Recipes
+        </span>
       </div>
 
-      {navItems.map((item) => (
-        <Link
-          key={item.path}
-          to={item.path}
-          className={`nav-item ${isActive(item.path, item.exact) ? "active" : ""}`}
-        >
-          {item.label}
-        </Link>
-      ))}
+      {/* Nav links */}
+      {NAV_ITEMS.map(({ label, to, icon }) => {
+        const active = isActive(to);
+        return (
+          <Link
+            key={label}
+            to={to}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              padding: "10px 14px",
+              borderRadius: "12px",
+              fontSize: "14px",
+              fontWeight: active ? 700 : 600,
+              fontFamily: "'Nunito', sans-serif",
+              textDecoration: "none",
+              transition: "background .15s, color .15s",
+              background: active ? "#e8f9d0" : "transparent",
+              color: active ? "#5aaa10" : "#b0b8c1",
+              border: active ? "1.5px solid #7ed321" : "1.5px solid transparent",
+              marginTop: label === "Recover Deleted" ? "8px" : "0",
+            }}
+            onMouseEnter={e => {
+              if (!active) {
+                e.currentTarget.style.background = "#f4fce8";
+                e.currentTarget.style.color = "#5aaa10";
+              }
+            }}
+            onMouseLeave={e => {
+              if (!active) {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = "#b0b8c1";
+              }
+            }}
+          >
+            <span style={{ fontSize: "17px", lineHeight: 1 }}>{icon}</span>
+            <span>{label}</span>
+          </Link>
+        );
+      })}
 
-      <button className="nav-item logout-btn" style={{ background: "none", border: "none", textAlign: "left", cursor: "pointer", marginTop: "auto" }}>
-        Logout
-      </button>
+      {/* Divider */}
+      <div style={{ height: "1px", background: "#f0f4f0", margin: "12px 0" }} />
+
+      {/* Logout */}
+      <Link
+        to="/logout"
+        style={{
+          display: "flex", alignItems: "center", gap: "10px",
+          padding: "10px 14px", borderRadius: "12px",
+          fontSize: "14px", fontWeight: 600,
+          fontFamily: "'Nunito', sans-serif",
+          textDecoration: "none",
+          color: "#b0b8c1",
+          border: "1.5px solid transparent",
+          transition: "background .15s, color .15s",
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.background = "#fff0f0";
+          e.currentTarget.style.color = "#e5333a";
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = "transparent";
+          e.currentTarget.style.color = "#b0b8c1";
+        }}
+      >
+        <span style={{ fontSize: "17px" }}>🚪</span>
+        <span>Logout</span>
+      </Link>
+
     </aside>
   );
 };
