@@ -48,8 +48,8 @@ const RecipeDetailPage = () => {
     finally { setSaving(false); }
   };
 
-  const handleToggleStatus = async () => {
-    const newStatus = recipe.status === "keeper" ? "want_to_try" : "keeper";
+  const handleSetStatus = async (newStatus) => {
+    if (recipe.status === newStatus) return; // already set, no-op
     try {
       const res = await api.put(`/recipes/${id}`, { ...recipe, status: newStatus });
       setRecipe(res.data);
@@ -102,22 +102,48 @@ const RecipeDetailPage = () => {
                 value={recipe.name}
                 onChange={(e) => setRecipe({ ...recipe, name: e.target.value })}
               />
-              <div style={{ marginTop: 6 }}>
+
+              {/* Status selector — two visible buttons, active one is filled */}
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+
+                {/* Keeper button */}
                 <button
-                  onClick={handleToggleStatus}
+                  onClick={() => handleSetStatus("keeper")}
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 5,
-                    background: recipe.status === "keeper" ? "var(--green-light)" : "var(--orange-light)",
-                    border: `1.5px solid ${recipe.status === "keeper" ? "var(--green)" : "var(--orange)"}`,
-                    borderRadius: 50, padding: "3px 12px",
+                    background: recipe.status === "keeper" ? "var(--green-light)" : "transparent",
+                    border: `1.5px solid ${recipe.status === "keeper" ? "var(--green)" : "var(--gray-mid)"}`,
+                    borderRadius: 50, padding: "5px 14px",
                     fontSize: 12, fontWeight: 800,
-                    color: recipe.status === "keeper" ? "var(--green-dark)" : "var(--orange)",
-                    cursor: "pointer", fontFamily: "'Nunito', sans-serif",
+                    color: recipe.status === "keeper" ? "var(--green-dark)" : "var(--gray)",
+                    cursor: recipe.status === "keeper" ? "default" : "pointer",
+                    fontFamily: "'Nunito', sans-serif",
                     textTransform: "uppercase", letterSpacing: ".04em",
+                    transition: "all .2s",
                   }}
                 >
-                  {recipe.status === "keeper" ? "⭐ Keeper" : "🕐 Save for Later"}
+                  ⭐ Keeper
                 </button>
+
+                {/* Save for Later button */}
+                <button
+                  onClick={() => handleSetStatus("want_to_try")}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 5,
+                    background: recipe.status === "want_to_try" ? "var(--orange-light)" : "transparent",
+                    border: `1.5px solid ${recipe.status === "want_to_try" ? "var(--orange)" : "var(--gray-mid)"}`,
+                    borderRadius: 50, padding: "5px 14px",
+                    fontSize: 12, fontWeight: 800,
+                    color: recipe.status === "want_to_try" ? "var(--orange)" : "var(--gray)",
+                    cursor: recipe.status === "want_to_try" ? "default" : "pointer",
+                    fontFamily: "'Nunito', sans-serif",
+                    textTransform: "uppercase", letterSpacing: ".04em",
+                    transition: "all .2s",
+                  }}
+                >
+                  🕐 Save for Later
+                </button>
+
               </div>
             </div>
           </div>
@@ -152,7 +178,7 @@ const RecipeDetailPage = () => {
                   <input type="text" placeholder="Ingredient" value={ing.name}
                     onChange={(e) => {
                       const updated = [...recipe.ingredients];
-                      updated[i].name = e.target.value;
+                      updated[i] = { ...updated[i], name: e.target.value };
                       setRecipe({ ...recipe, ingredients: updated });
                     }}
                   />
@@ -161,7 +187,7 @@ const RecipeDetailPage = () => {
                   <input type="text" placeholder="Amount" value={ing.amount}
                     onChange={(e) => {
                       const updated = [...recipe.ingredients];
-                      updated[i].amount = e.target.value;
+                      updated[i] = { ...updated[i], amount: e.target.value };
                       setRecipe({ ...recipe, ingredients: updated });
                     }}
                   />
