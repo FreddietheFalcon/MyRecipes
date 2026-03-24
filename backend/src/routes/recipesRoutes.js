@@ -7,20 +7,25 @@ import {
   updateRecipe,
   deleteRecipe,
   restoreRecipe,
+  addComment,
+  deleteComment,
 } from "../controllers/recipesController.js";
 
 const router = express.Router();
 
-// Trash routes — these MUST come before /:id routes so Express does not
-// interpret the literal string "trash" as a dynamic :id parameter.
+// IMPORTANT: /trash must come before /:id so Express does not
+// match the string "trash" as a dynamic :id parameter.
 router.get("/trash", getTrashedRecipes);
-router.put("/:id/restore", restoreRecipe);
 
-// Active recipe CRUD
 router.get("/", getAllRecipes);
 router.get("/:id", getRecipeByID);
 router.post("/", createRecipe);
 router.put("/:id", updateRecipe);
 router.delete("/:id", deleteRecipe);
+router.put("/:id/restore", restoreRecipe);
+
+// Comments
+router.post("/:id/comments", addComment);
+router.delete("/:id/comments/:commentId", deleteComment);
 
 export default router;
