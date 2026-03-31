@@ -1,5 +1,36 @@
 import Recipe from "../models/Recipe.js";
 
+// ── Input validation ──────────────────────────────────────────────────────────
+// Allowed: letters, numbers, spaces, and common punctuation.
+// Blocks < > { } [ ] \ ` to prevent HTML/JS injection.
+const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\u00C0-\u024F\s'"!?.,\-_()\&@#%+=*/~]+$/;
+const MAX_COMMENT_LENGTH = 500;
+const MAX_NAME_LENGTH = 100;
+const MAX_STEP_LENGTH = 1000;
+
+function validateComment(text) {
+  if (!text?.trim()) return { valid: false, message: "Comment cannot be empty" };
+  if (text.length > MAX_COMMENT_LENGTH) return { valid: false, message: `Comment must be ${MAX_COMMENT_LENGTH} characters or less` };
+  if (!SAFE_TEXT_REGEX.test(text)) return { valid: false, message: "Comment contains invalid characters. Angle brackets and code symbols are not allowed." };
+  return { valid: true };
+}
+
+function validateName(text, fieldName = "Name") {
+  if (!text?.trim()) return { valid: false, message: `${fieldName} cannot be empty` };
+  if (text.length > MAX_NAME_LENGTH) return { valid: false, message: `${fieldName} must be ${MAX_NAME_LENGTH} characters or less` };
+  if (!SAFE_TEXT_REGEX.test(text)) return { valid: false, message: `${fieldName} contains invalid characters` };
+  return { valid: true };
+}
+
+function validateStep(text) {
+  if (!text?.trim()) return { valid: true };
+  if (text.length > MAX_STEP_LENGTH) return { valid: false, message: `Step must be ${MAX_STEP_LENGTH} characters or less` };
+  if (!SAFE_TEXT_REGEX.test(text)) return { valid: false, message: "Step contains invalid characters" };
+  return { valid: true };
+}
+
+// ── Controllers ───────────────────────────────────────────────────────────────
+
 // GET /api/recipes
 export async function getAllRecipes(_, res) {
   try {
@@ -45,7 +76,29 @@ export async function getRecipeByID(req, res) {
 export async function createRecipe(req, res) {
   try {
     const { name, servings, status, ingredients, steps } = req.body;
-    if (!name?.trim()) return res.status(400).json({ message: "Recipe name is required" });
+
+    // Validate recipe name
+    const nameCheck = validateName(name, "Recipe name");
+    if (!nameCheck.valid) return res.status(400).json({ message: nameCheck.message });
+
+    // Validate ingredient names
+    if (ingredients?.length) {
+      for (const ing of ingredients) {
+        if (ing.name?.trim()) {
+          const ingCheck = validateName(ing.name, "Ingredient name");
+          if (!ingCheck.valid) return res.status(400).json({ message: ingCheck.message });
+        }
+      }
+    }
+
+    // Validate steps
+    if (steps?.length) {
+      for (const step of steps) {
+        const stepCheck = validateStep(step);
+        if (!stepCheck.valid) return res.status(400).json({ message: stepCheck.message });
+      }
+    }
+
     const recipe = new Recipe({ name, servings, status, ingredients, steps });
     const saved = await recipe.save();
     res.status(201).json(saved);
@@ -56,11 +109,33 @@ export async function createRecipe(req, res) {
 }
 
 // PUT /api/recipes/:id
-// Accepts full recipe object or partial (e.g. status-only toggle).
-// Only updates fields that were actually sent — never wipes fields not included.
 export async function updateRecipe(req, res) {
   try {
     const { name, servings, status, ingredients, steps, comments } = req.body;
+
+    // Validate name if provided
+    if (name !== undefined) {
+      const nameCheck = validateName(name, "Recipe name");
+      if (!nameCheck.valid) return res.status(400).json({ message: nameCheck.message });
+    }
+
+    // Validate ingredient names if provided
+    if (ingredients?.length) {
+      for (const ing of ingredients) {
+        if (ing.name?.trim()) {
+          const ingCheck = validateName(ing.name, "Ingredient name");
+          if (!ingCheck.valid) return res.status(400).json({ message: ingCheck.message });
+        }
+      }
+    }
+
+    // Validate steps if provided
+    if (steps?.length) {
+      for (const step of steps) {
+        const stepCheck = validateStep(step);
+        if (!stepCheck.valid) return res.status(400).json({ message: stepCheck.message });
+      }
+    }
 
     const update = {};
     if (name !== undefined)        update.name        = name;
@@ -119,10 +194,14 @@ export async function restoreRecipe(req, res) {
 export async function addComment(req, res) {
   try {
     const { text } = req.body;
-    if (!text?.trim()) return res.status(400).json({ message: "Comment text is required" });
+
+    // Validate comment text
+    const check = validateComment(text);
+    if (!check.valid) return res.status(400).json({ message: check.message });
+
     const recipe = await Recipe.findOneAndUpdate(
       { _id: req.params.id, isDeleted: { $ne: true } },
-      { $push: { comments: { text } } },
+      { $push: { comments: { text: text.trim() } } },
       { new: true }
     );
     if (!recipe) return res.status(404).json({ message: "Recipe not found" });
