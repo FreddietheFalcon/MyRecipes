@@ -1,5 +1,17 @@
 import Ingredient from "../models/Ingredient.js";
 
+// ── Input validation ──────────────────────────────────────────────────────────
+const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\u00C0-\u024F\s'"!?.,\-_()\&@#%+=*/~]+$/;
+
+function validateName(text, fieldName = "Name") {
+  if (!text?.trim()) return { valid: false, message: `${fieldName} cannot be empty` };
+  if (text.length > 100) return { valid: false, message: `${fieldName} must be 100 characters or less` };
+  if (!SAFE_TEXT_REGEX.test(text)) return { valid: false, message: `${fieldName} contains invalid characters` };
+  return { valid: true };
+}
+
+// ── Controllers ───────────────────────────────────────────────────────────────
+
 export async function getAllIngredients(_, res) {
   try {
     const ingredients = await Ingredient.find().sort({ name: 1 });
@@ -24,6 +36,10 @@ export async function getIngredientById(req, res) {
 export async function createIngredient(req, res) {
   try {
     const { name, amount, unit, status } = req.body;
+
+    const nameCheck = validateName(name, "Ingredient name");
+    if (!nameCheck.valid) return res.status(400).json({ message: nameCheck.message });
+
     const ingredient = new Ingredient({ name, amount, unit, status });
     const saved = await ingredient.save();
     res.status(201).json(saved);
@@ -36,6 +52,10 @@ export async function createIngredient(req, res) {
 export async function updateIngredient(req, res) {
   try {
     const { name, amount, unit, status } = req.body;
+
+    const nameCheck = validateName(name, "Ingredient name");
+    if (!nameCheck.valid) return res.status(400).json({ message: nameCheck.message });
+
     const updated = await Ingredient.findByIdAndUpdate(
       req.params.id,
       { name, amount, unit, status },

@@ -12,9 +12,9 @@ const UNITS = {
 };
 
 const STATUS_OPTIONS = [
-  { value: "ok",  icon: "✅", label: "In Stock",     sub: "Enough on hand",      cls: "opt-ok" },
+  { value: "ok",  icon: "✅", label: "In Stock",     sub: "Enough on hand",       cls: "opt-ok" },
   { value: "low", icon: "⚠️", label: "Running Low",  sub: "Need to restock soon", cls: "opt-low" },
-  { value: "out", icon: "❌", label: "Out of Stock", sub: "Need to buy",          cls: "opt-out" },
+  { value: "out", icon: "❌", label: "Out of Stock", sub: "Need to buy",           cls: "opt-out" },
 ];
 
 const STATUS_COLORS = {
@@ -25,6 +25,17 @@ const STATUS_COLORS = {
 
 const BADGE_LABEL = { ok: "✅ In Stock", low: "⚠️ Running Low", out: "❌ Out of Stock" };
 
+// ── Validation ────────────────────────────────────────────────────────────────
+const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\u00C0-\u024F\s'"!?.,\-_()\&@#%+=*/~]+$/;
+
+function validateName(text, fieldName = "Name") {
+  if (!text?.trim()) return `${fieldName} cannot be empty`;
+  if (text.length > 100) return `${fieldName} must be 100 characters or less`;
+  if (!SAFE_TEXT_REGEX.test(text)) return `${fieldName} contains invalid characters (< > { } [ ] are not allowed)`;
+  return null;
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 const AddIngredientPage = () => {
   const [name, setName]     = useState("");
   const [amount, setAmount] = useState("");
@@ -35,14 +46,16 @@ const AddIngredientPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name.trim()) { toast.error("Ingredient name is required"); return; }
+    const nameError = validateName(name, "Ingredient name");
+    if (nameError) { toast.error(nameError); return; }
+
     setLoading(true);
     try {
       await api.post("/inventory", { name, amount: amount ? Number(amount) : 0, unit, status });
       toast.success(`"${name}" added to inventory!`);
       navigate("/inventory");
-    } catch {
-      toast.error("Failed to add ingredient");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to add ingredient");
     } finally {
       setLoading(false);
     }

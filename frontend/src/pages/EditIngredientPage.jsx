@@ -25,6 +25,17 @@ const STATUS_COLORS = {
 
 const BADGE_LABEL = { ok: "✅ In Stock", low: "⚠️ Running Low", out: "❌ Out of Stock" };
 
+// ── Validation ────────────────────────────────────────────────────────────────
+const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\u00C0-\u024F\s'"!?.,\-_()\&@#%+=*/~]+$/;
+
+function validateName(text, fieldName = "Name") {
+  if (!text?.trim()) return `${fieldName} cannot be empty`;
+  if (text.length > 100) return `${fieldName} must be 100 characters or less`;
+  if (!SAFE_TEXT_REGEX.test(text)) return `${fieldName} contains invalid characters (< > { } [ ] are not allowed)`;
+  return null;
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 const EditIngredientPage = () => {
   const [name, setName]     = useState("");
   const [amount, setAmount] = useState("");
@@ -60,14 +71,16 @@ const EditIngredientPage = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!name.trim()) { toast.error("Name is required"); return; }
+    const nameError = validateName(name, "Ingredient name");
+    if (nameError) { toast.error(nameError); return; }
+
     setSaving(true);
     try {
       await api.put(`/inventory/${id}`, { name, amount: amount ? Number(amount) : 0, unit, status });
       toast.success(`"${name}" updated!`);
       navigate("/inventory");
-    } catch {
-      toast.error("Failed to save changes");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to save changes");
     } finally {
       setSaving(false);
     }
