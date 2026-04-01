@@ -1,22 +1,35 @@
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
+import api from "../lib/axios";
+import toast from "react-hot-toast";
 
 const NAV_ITEMS = [
-  { label: "Search",         to: "/",           icon: "🔍" },
-  { label: "Keepers",        to: "/?tab=keeper",       icon: "⭐" },
-  { label: "Save for Later", to: "/?tab=want_to_try",  icon: "🕐" },
-  { label: "Add Recipe",     to: "/create",     icon: "➕" },
-  { label: "Inventory",      to: "/inventory",  icon: "🥫" },
-  { label: "Recover Deleted",to: "/trash",      icon: "♻️" },
+  { label: "Search",         to: "/",              icon: "🔍" },
+  { label: "Keepers",        to: "/?tab=keeper",   icon: "⭐" },
+  { label: "Save for Later", to: "/?tab=want_to_try", icon: "🕐" },
+  { label: "Add Recipe",     to: "/create",        icon: "➕" },
+  { label: "Inventory",      to: "/inventory",     icon: "🥫" },
+  { label: "Recover Deleted",to: "/trash",         icon: "♻️" },
 ];
 
 const Sidebar = () => {
   const { pathname, search } = useLocation();
+  const navigate = useNavigate();
   const fullPath = pathname + search;
 
   const isActive = (to) => {
     if (to === "/") return pathname === "/" && !search.includes("tab=");
     if (to.includes("?")) return fullPath === to;
     return pathname === to || pathname.startsWith(to + "/");
+  };
+
+  const handleLogout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      // Even if the API call fails, clear local state and redirect
+    }
+    navigate("/login");
+    toast.success("Logged out successfully");
   };
 
   return (
@@ -98,8 +111,8 @@ const Sidebar = () => {
       <div style={{ height: "1px", background: "#f0f4f0", margin: "12px 0" }} />
 
       {/* Logout */}
-      <Link
-        to="/logout"
+      <button
+        onClick={handleLogout}
         style={{
           display: "flex", alignItems: "center", gap: "10px",
           padding: "10px 14px", borderRadius: "12px",
@@ -108,6 +121,9 @@ const Sidebar = () => {
           textDecoration: "none",
           color: "#b0b8c1",
           border: "1.5px solid transparent",
+          background: "transparent",
+          cursor: "pointer",
+          width: "100%",
           transition: "background .15s, color .15s",
         }}
         onMouseEnter={e => {
@@ -121,7 +137,7 @@ const Sidebar = () => {
       >
         <span style={{ fontSize: "17px" }}>🚪</span>
         <span>Logout</span>
-      </Link>
+      </button>
 
     </aside>
   );
