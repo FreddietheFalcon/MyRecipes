@@ -129,9 +129,11 @@ export async function verifyOTP(req, res) {
     console.log("VERIFY — redis key:", redisKey);
     console.log("VERIFY — otp entered:", otp);
     console.log("VERIFY — otp in redis:", stored);
-    console.log("VERIFY — match?", stored === otp);
+    console.log("VERIFY — stored type:", typeof stored);
+    console.log("VERIFY — otp type:", typeof otp);
+    console.log("VERIFY — match?", String(stored) === String(otp));
 
-    if (!stored || stored !== otp) return res.status(401).json({ message: "Invalid or expired code" });
+    if (!stored || String(stored) !== String(otp)) return res.status(401).json({ message: "Invalid or expired code" });
 
     await redis.del(redisKey);
 
