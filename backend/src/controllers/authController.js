@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import User from "../models/User.js";
 import { Redis } from "@upstash/redis";
 
@@ -9,14 +9,13 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 const sendOTPEmail = async (email, otp) => {
-  await transporter.sendMail({
-    from: `"My Recipes" <${process.env.EMAIL_USER}>`,
+  await resend.emails.send({
+    from: "My Recipes <onboarding@resend.dev>",
     to: email,
     subject: "Your My Recipes login code",
     html: `
@@ -46,6 +45,7 @@ const cookieOptions = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
+// ── POST /api/auth/register ───────────────────────────────────────────────────
 export async function register(req, res) {
   try {
     const email = req.body.email?.toLowerCase().trim();
@@ -62,19 +62,7 @@ export async function register(req, res) {
     await User.create({ email, passwordHash, role: assignedRole });
 
     const otp = generateOTP();
-    const redisKey = `otp:${email}`;
-    
-    // DEBUG — remove after fixing
-    console.log("REGISTER — email:", email);
-    console.log("REGISTER — redis key:", redisKey);
-    console.log("REGISTER — otp generated:", otp);
-    
-    await redis.set(redisKey, otp, { ex: 600 });
-    
-    // Verify it was stored correctly
-    const storedCheck = await redis.get(redisKey);
-    console.log("REGISTER — otp stored in redis:", storedCheck);
-    
+    await redis.set(`otp:${email}`, otp, { ex: 600 });
     await sendOTPEmail(email, otp);
 
     res.status(201).json({ message: "Account created. Check your email for a verification code.", email });
@@ -84,6 +72,7 @@ export async function register(req, res) {
   }
 }
 
+// ── POST /api/auth/login ─────────────────────────────────────────────────────
 export async function login(req, res) {
   try {
     const email = req.body.email?.toLowerCase().trim();
@@ -99,13 +88,7 @@ export async function login(req, res) {
     if (!user.isVerified) return res.status(403).json({ message: "Please verify your email first", email });
 
     const otp = generateOTP();
-    const redisKey = `otp:${email}`;
-    
-    console.log("LOGIN — email:", email);
-    console.log("LOGIN — redis key:", redisKey);
-    console.log("LOGIN — otp generated:", otp);
-    
-    await redis.set(redisKey, otp, { ex: 600 });
+    await redis.set(`otp:${email}`, otp, { ex: 600 });
     await sendOTPEmail(email, otp);
 
     res.status(200).json({ message: "Check your email for a login code.", email });
@@ -115,27 +98,19 @@ export async function login(req, res) {
   }
 }
 
+// ── POST /api/auth/verify-otp ────────────────────────────────────────────────
 export async function verifyOTP(req, res) {
   try {
     const email = req.body.email?.toLowerCase().trim();
     const otp = req.body.otp?.trim();
     if (!email || !otp) return res.status(400).json({ message: "Email and OTP are required" });
 
-    const redisKey = `otp:${email}`;
-    const stored = await redis.get(redisKey);
-    
-    // DEBUG — remove after fixing
-    console.log("VERIFY — email:", email);
-    console.log("VERIFY — redis key:", redisKey);
-    console.log("VERIFY — otp entered:", otp);
-    console.log("VERIFY — otp in redis:", stored);
-    console.log("VERIFY — stored type:", typeof stored);
-    console.log("VERIFY — otp type:", typeof otp);
-    console.log("VERIFY — match?", String(stored) === String(otp));
+    const stored = await redis.get(`otp:${email}`);
+    if (!stored || String(stored) !== String(otp)) {
+      return res.status(401).json({ message: "Invalid or expired code" });
+    }
 
-    if (!stored || String(stored) !== String(otp)) return res.status(401).json({ message: "Invalid or expired code" });
-
-    await redis.del(redisKey);
+    await redis.del(`otp:${email}`);
 
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -154,15 +129,18 @@ export async function verifyOTP(req, res) {
   }
 }
 
+// ── POST /api/auth/logout ────────────────────────────────────────────────────
 export async function logout(req, res) {
   res.clearCookie("token", cookieOptions);
   res.status(200).json({ message: "Logged out" });
 }
 
+// ── GET /api/auth/me ─────────────────────────────────────────────────────────
 export async function getMe(req, res) {
   res.status(200).json({ email: req.user.email, role: req.user.role });
 }
 
+// ── GET /api/auth/users (owner only) ─────────────────────────────────────────
 export async function getAllUsers(req, res) {
   try {
     const users = await User.find().select("-passwordHash").sort({ createdAt: -1 });
@@ -173,6 +151,7 @@ export async function getAllUsers(req, res) {
   }
 }
 
+// ── PUT /api/auth/users/:id/role (owner only) ────────────────────────────────
 export async function updateUserRole(req, res) {
   try {
     const { role } = req.body;
