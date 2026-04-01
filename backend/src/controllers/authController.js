@@ -51,7 +51,9 @@ const cookieOptions = {
 // ── POST /api/auth/register ───────────────────────────────────────────────────
 export async function register(req, res) {
   try {
-    const { email, password, role } = req.body;
+    // Always lowercase email to ensure consistent Redis key matching
+    const email = req.body.email?.toLowerCase().trim();
+    const { password, role } = req.body;
     if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
 
     const existing = await User.findOne({ email });
@@ -63,7 +65,7 @@ export async function register(req, res) {
     const userCount = await User.countDocuments();
     const assignedRole = userCount === 0 ? "owner" : (role || "viewer");
 
-    const user = await User.create({ email, passwordHash, role: assignedRole });
+    await User.create({ email, passwordHash, role: assignedRole });
 
     // Send OTP for email verification
     const otp = generateOTP();
@@ -80,7 +82,9 @@ export async function register(req, res) {
 // ── POST /api/auth/login ─────────────────────────────────────────────────────
 export async function login(req, res) {
   try {
-    const { email, password } = req.body;
+    // Always lowercase email to ensure consistent Redis key matching
+    const email = req.body.email?.toLowerCase().trim();
+    const { password } = req.body;
     if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
 
     const user = await User.findOne({ email });
@@ -106,7 +110,9 @@ export async function login(req, res) {
 // ── POST /api/auth/verify-otp ────────────────────────────────────────────────
 export async function verifyOTP(req, res) {
   try {
-    const { email, otp } = req.body;
+    // Always lowercase email to ensure consistent Redis key matching
+    const email = req.body.email?.toLowerCase().trim();
+    const otp = req.body.otp?.trim();
     if (!email || !otp) return res.status(400).json({ message: "Email and OTP are required" });
 
     const stored = await redis.get(`otp:${email}`);
