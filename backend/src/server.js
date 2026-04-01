@@ -2,9 +2,11 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
+import cookieParser from "cookie-parser";
 
 import recipesRoutes from "./routes/recipesRoutes.js";
 import inventoryRoutes from "./routes/inventoryRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 import { connectDB } from "./config/db.js";
 import rateLimiter from "./middleware/rateLimiter.js";
 
@@ -15,12 +17,14 @@ const PORT = process.env.PORT || 5001;
 const __dirname = path.resolve();
 
 if (process.env.NODE_ENV !== "production") {
-  app.use(cors({ origin: "http://localhost:5173" }));
+  app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 }
 
 app.use(express.json());
+app.use(cookieParser());
 app.use(rateLimiter);
 
+app.use("/api/auth", authRoutes);
 app.use("/api/recipes", recipesRoutes);
 app.use("/api/inventory", inventoryRoutes);
 
