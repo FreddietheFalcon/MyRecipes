@@ -5,15 +5,8 @@ import api from "../lib/axios";
 import { LoaderIcon } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 
-// ── Frontend input validation ─────────────────────────────────────────────────
+// ── Frontend validation ───────────────────────────────────────────────────────
 const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\u00C0-\u024F\s'"!?.,\-_()\&@#%+=*/~]+$/;
-
-function validateComment(text) {
-  if (!text?.trim()) return "Comment cannot be empty";
-  if (text.length > 500) return "Comment must be 500 characters or less";
-  if (!SAFE_TEXT_REGEX.test(text)) return "Comment contains invalid characters (< > { } [ ] are not allowed)";
-  return null; // null = valid
-}
 
 function validateName(text, fieldName = "Name") {
   if (!text?.trim()) return `${fieldName} cannot be empty`;
@@ -22,14 +15,17 @@ function validateName(text, fieldName = "Name") {
   return null;
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+function validateComment(text) {
+  if (!text?.trim()) return null;
+  if (text.length > 500) return "Comment must be 500 characters or less";
+  if (!SAFE_TEXT_REGEX.test(text)) return "Comment contains invalid characters (< > { } [ ] are not allowed)";
+  return null;
+}
+
 const RecipeDetailPage = () => {
   const [recipe, setRecipe] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [newComment, setNewComment] = useState("");
-  const [commentError, setCommentError] = useState("");
-  const [addingComment, setAddingComment] = useState(false);
   const navigate = useNavigate();
   const { id } = useParams();
 
@@ -57,8 +53,16 @@ const RecipeDetailPage = () => {
   };
 
   const handleSave = async () => {
+    // Validate name
     const nameError = validateName(recipe.name, "Recipe name");
     if (nameError) { toast.error(nameError); return; }
+
+    // Validate comments
+    for (let i = 0; i < (recipe.comments || []).length; i++) {
+      const commentError = validateComment(recipe.comments[i].text);
+      if (commentError) { toast.error(`Comment ${i + 1}: ${commentError}`); return; }
+    }
+
     setSaving(true);
     try {
       await api.put(`/recipes/${id}`, recipe);
@@ -69,47 +73,24 @@ const RecipeDetailPage = () => {
     } finally { setSaving(false); }
   };
 
-  const handleSetStatus = async (newStatus) => {
+  const handleSetStatus = (newStatus) => {
     if (recipe.status === newStatus) return;
-    try {
-      const res = await api.put(`/recipes/${id}`, { ...recipe, status: newStatus });
-      setRecipe(res.data);
-      toast.success(newStatus === "keeper" ? "Moved to Keepers ⭐" : "Moved to Save for Later 🕐");
-    } catch { toast.error("Failed to update status"); }
+    setRecipe({ ...recipe, status: newStatus });
   };
 
-  const handleCommentChange = (e) => {
-    const val = e.target.value;
-    setNewComment(val);
-    // Live validation feedback
-    if (val) {
-      const error = validateComment(val);
-      setCommentError(error || "");
-    } else {
-      setCommentError("");
-    }
+  // Comment helpers — all local state, saved with Save Changes
+  const addComment = () => {
+    setRecipe({ ...recipe, comments: [...(recipe.comments || []), { text: "" }] });
   };
 
-  const handleAddComment = async () => {
-    const error = validateComment(newComment);
-    if (error) { toast.error(error); return; }
-    setAddingComment(true);
-    try {
-      const res = await api.post(`/recipes/${id}/comments`, { text: newComment });
-      setRecipe(res.data);
-      setNewComment("");
-      setCommentError("");
-      toast.success("Comment added");
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to add comment");
-    } finally { setAddingComment(false); }
+  const updateComment = (i, val) => {
+    const updated = [...recipe.comments];
+    updated[i] = { ...updated[i], text: val };
+    setRecipe({ ...recipe, comments: updated });
   };
 
-  const handleDeleteComment = async (commentId) => {
-    try {
-      const res = await api.delete(`/recipes/${id}/comments/${commentId}`);
-      setRecipe(res.data);
-    } catch { toast.error("Failed to delete comment"); }
+  const removeComment = (i) => {
+    setRecipe({ ...recipe, comments: recipe.comments.filter((_, idx) => idx !== i) });
   };
 
   if (loading) {
@@ -139,7 +120,7 @@ const RecipeDetailPage = () => {
                 onChange={(e) => setRecipe({ ...recipe, name: e.target.value })}
               />
 
-              {/* Status selector — two visible buttons */}
+              {/* Status selector */}
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                 <button
                   onClick={() => handleSetStatus("keeper")}
@@ -155,9 +136,7 @@ const RecipeDetailPage = () => {
                     textTransform: "uppercase", letterSpacing: ".04em",
                     transition: "all .2s",
                   }}
-                >
-                  ⭐ Keeper
-                </button>
+                >⭐ Keeper</button>
                 <button
                   onClick={() => handleSetStatus("want_to_try")}
                   style={{
@@ -172,9 +151,7 @@ const RecipeDetailPage = () => {
                     textTransform: "uppercase", letterSpacing: ".04em",
                     transition: "all .2s",
                   }}
-                >
-                  🕐 Save for Later
-                </button>
+                >🕐 Save for Later</button>
               </div>
             </div>
           </div>
@@ -259,49 +236,42 @@ const RecipeDetailPage = () => {
               + Add Step
             </button>
 
-            {/* Comments */}
-            <div className="section-heading">Comments</div>
-            {recipe.comments?.length === 0 && (
+            {/* Comments — all local, saved with Save Changes */}
+            <div className="section-heading">Comments / Notes</div>
+            {(recipe.comments || []).length === 0 && (
               <p style={{ fontSize: 13, color: "var(--gray)", marginBottom: 12 }}>No comments yet.</p>
             )}
-            {recipe.comments?.map((c) => (
-              <div key={c._id} style={{ background: "#fffdf4", border: "1.5px solid #f0e8c0", borderRadius: 12, padding: "12px 14px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                <p style={{ fontSize: 14, fontWeight: 600, color: "#8a7a40", fontStyle: "italic", lineHeight: 1.7 }}>{c.text}</p>
-                <button onClick={() => handleDeleteComment(c._id)}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--red)", fontSize: 14, flexShrink: 0 }}>✕</button>
-              </div>
-            ))}
-
-            {/* Comment input with live validation */}
-            <div style={{ marginTop: 8 }}>
-              <div style={{ display: "flex", gap: 8 }}>
-                <div className="input-wrap" style={{ flex: 1, borderColor: commentError ? "var(--red)" : undefined }}>
+            {(recipe.comments || []).map((c, i) => (
+              <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                <div className="input-wrap" style={{ flex: 1, background: "#fffdf4", borderColor: "#f0e8c0" }}>
                   <input
                     type="text"
-                    placeholder="Add a comment..."
-                    value={newComment}
-                    onChange={handleCommentChange}
-                    onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
+                    placeholder="e.g. Add more garlic next time"
+                    value={c.text}
+                    onChange={(e) => updateComment(i, e.target.value)}
                     maxLength={500}
+                    style={{ fontStyle: "italic", color: "#8a7a40" }}
                   />
                 </div>
-                <button className="btn-primary" onClick={handleAddComment} disabled={addingComment || !!commentError}>
-                  {addingComment ? "..." : "Add"}
-                </button>
+                <button type="button" onClick={() => removeComment(i)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--red)", fontSize: 16 }}>✕</button>
               </div>
-              {/* Live error message */}
-              {commentError && (
-                <p style={{ fontSize: 11, color: "var(--red)", fontWeight: 700, marginTop: 4 }}>
-                  ⚠ {commentError}
-                </p>
-              )}
-              {/* Character counter */}
-              <p style={{ fontSize: 11, color: newComment.length > 450 ? "var(--orange)" : "var(--gray)", fontWeight: 600, marginTop: 4, textAlign: "right" }}>
-                {newComment.length}/500
-              </p>
-            </div>
+            ))}
+            <button type="button" className="btn-ghost" style={{ fontSize: 13 }}
+              onClick={addComment}>
+              + Add Comment
+            </button>
           </div>
         </div>
+
+        {/* Save reminder */}
+        <div style={{ marginTop: 32, paddingTop: 24, borderTop: "1.5px solid var(--gray-mid)", display: "flex", justifyContent: "flex-end", gap: 10 }}>
+          <Link to="/" className="btn-ghost">Cancel</Link>
+          <button className="btn-primary" onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "✓ Save Changes"}
+          </button>
+        </div>
+
       </main>
     </div>
   );

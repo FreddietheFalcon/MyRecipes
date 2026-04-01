@@ -21,13 +21,20 @@ function validateStep(text) {
   return null;
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+function validateComment(text) {
+  if (!text?.trim()) return null; // empty comments are filtered out
+  if (text.length > 500) return "Comment must be 500 characters or less";
+  if (!SAFE_TEXT_REGEX.test(text)) return "Comment contains invalid characters (< > { } [ ] are not allowed)";
+  return null;
+}
+
 const CreatePage = () => {
   const [name, setName] = useState("");
   const [servings, setServings] = useState("");
   const [status, setStatus] = useState("want_to_try");
   const [ingredients, setIngredients] = useState([{ name: "", amount: "" }]);
   const [steps, setSteps] = useState([""]);
+  const [comments, setComments] = useState([""]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -43,14 +50,18 @@ const CreatePage = () => {
     setSteps(updated);
   };
 
+  const updateComment = (i, val) => {
+    const updated = [...comments];
+    updated[i] = val;
+    setComments(updated);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate recipe name
     const nameError = validateName(name, "Recipe name");
     if (nameError) { toast.error(nameError); return; }
 
-    // Validate ingredient names and amounts
     for (const ing of ingredients) {
       if (ing.name.trim()) {
         const ingNameError = validateName(ing.name, "Ingredient name");
@@ -62,10 +73,14 @@ const CreatePage = () => {
       }
     }
 
-    // Validate steps
     for (let i = 0; i < steps.length; i++) {
       const stepError = validateStep(steps[i]);
       if (stepError) { toast.error(`Step ${i + 1}: ${stepError}`); return; }
+    }
+
+    for (let i = 0; i < comments.length; i++) {
+      const commentError = validateComment(comments[i]);
+      if (commentError) { toast.error(`Comment ${i + 1}: ${commentError}`); return; }
     }
 
     setLoading(true);
@@ -76,6 +91,7 @@ const CreatePage = () => {
         status,
         ingredients: ingredients.filter((i) => i.name.trim()),
         steps: steps.filter((s) => s.trim()),
+        comments: comments.filter((c) => c.trim()).map((text) => ({ text })),
       });
       toast.success("Recipe created!");
       navigate("/");
@@ -169,6 +185,32 @@ const CreatePage = () => {
             <button type="button" className="btn-ghost" style={{ marginTop: 4, fontSize: 13 }}
               onClick={() => setSteps([...steps, ""])}>
               + Add Step
+            </button>
+          </div>
+
+          {/* Comments */}
+          <div className="field">
+            <label className="field-label">Comments / Notes</label>
+            {comments.map((comment, i) => (
+              <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                <div className="input-wrap" style={{ flex: 1 }}>
+                  <input
+                    type="text"
+                    placeholder="e.g. Add more garlic next time"
+                    value={comment}
+                    onChange={(e) => updateComment(i, e.target.value)}
+                    maxLength={500}
+                  />
+                </div>
+                {comments.length > 1 && (
+                  <button type="button" onClick={() => setComments(comments.filter((_, idx) => idx !== i))}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--red)", fontSize: 18, padding: "0 4px" }}>✕</button>
+                )}
+              </div>
+            ))}
+            <button type="button" className="btn-ghost" style={{ marginTop: 4, fontSize: 13 }}
+              onClick={() => setComments([...comments, ""])}>
+              + Add Comment
             </button>
           </div>
 
