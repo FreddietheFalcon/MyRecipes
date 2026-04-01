@@ -9,8 +9,6 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
@@ -45,13 +43,11 @@ const cookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "strict",
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-// ── POST /api/auth/register ───────────────────────────────────────────────────
 export async function register(req, res) {
   try {
-    // Always lowercase email to ensure consistent Redis key matching
     const email = req.body.email?.toLowerCase().trim();
     const { password, role } = req.body;
     if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
@@ -60,16 +56,25 @@ export async function register(req, res) {
     if (existing) return res.status(409).json({ message: "Email already registered" });
 
     const passwordHash = await bcrypt.hash(password, 12);
-
-    // First user ever becomes owner; subsequent users default to viewer
     const userCount = await User.countDocuments();
     const assignedRole = userCount === 0 ? "owner" : (role || "viewer");
 
     await User.create({ email, passwordHash, role: assignedRole });
 
-    // Send OTP for email verification
     const otp = generateOTP();
-    await redis.set(`otp:${email}`, otp, { ex: 600 }); // 10 min TTL
+    const redisKey = `otp:${email}`;
+    
+    // DEBUG — remove after fixing
+    console.log("REGISTER — email:", email);
+    console.log("REGISTER — redis key:", redisKey);
+    console.log("REGISTER — otp generated:", otp);
+    
+    await redis.set(redisKey, otp, { ex: 600 });
+    
+    // Verify it was stored correctly
+    const storedCheck = await redis.get(redisKey);
+    console.log("REGISTER — otp stored in redis:", storedCheck);
+    
     await sendOTPEmail(email, otp);
 
     res.status(201).json({ message: "Account created. Check your email for a verification code.", email });
@@ -79,10 +84,8 @@ export async function register(req, res) {
   }
 }
 
-// ── POST /api/auth/login ─────────────────────────────────────────────────────
 export async function login(req, res) {
   try {
-    // Always lowercase email to ensure consistent Redis key matching
     const email = req.body.email?.toLowerCase().trim();
     const { password } = req.body;
     if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
@@ -95,9 +98,14 @@ export async function login(req, res) {
 
     if (!user.isVerified) return res.status(403).json({ message: "Please verify your email first", email });
 
-    // Send OTP as second factor
     const otp = generateOTP();
-    await redis.set(`otp:${email}`, otp, { ex: 600 });
+    const redisKey = `otp:${email}`;
+    
+    console.log("LOGIN — email:", email);
+    console.log("LOGIN — redis key:", redisKey);
+    console.log("LOGIN — otp generated:", otp);
+    
+    await redis.set(redisKey, otp, { ex: 600 });
     await sendOTPEmail(email, otp);
 
     res.status(200).json({ message: "Check your email for a login code.", email });
@@ -107,23 +115,29 @@ export async function login(req, res) {
   }
 }
 
-// ── POST /api/auth/verify-otp ────────────────────────────────────────────────
 export async function verifyOTP(req, res) {
   try {
-    // Always lowercase email to ensure consistent Redis key matching
     const email = req.body.email?.toLowerCase().trim();
     const otp = req.body.otp?.trim();
     if (!email || !otp) return res.status(400).json({ message: "Email and OTP are required" });
 
-    const stored = await redis.get(`otp:${email}`);
+    const redisKey = `otp:${email}`;
+    const stored = await redis.get(redisKey);
+    
+    // DEBUG — remove after fixing
+    console.log("VERIFY — email:", email);
+    console.log("VERIFY — redis key:", redisKey);
+    console.log("VERIFY — otp entered:", otp);
+    console.log("VERIFY — otp in redis:", stored);
+    console.log("VERIFY — match?", stored === otp);
+
     if (!stored || stored !== otp) return res.status(401).json({ message: "Invalid or expired code" });
 
-    await redis.del(`otp:${email}`);
+    await redis.del(redisKey);
 
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Mark verified on first confirmation
     if (!user.isVerified) {
       user.isVerified = true;
       await user.save();
@@ -138,18 +152,15 @@ export async function verifyOTP(req, res) {
   }
 }
 
-// ── POST /api/auth/logout ────────────────────────────────────────────────────
 export async function logout(req, res) {
   res.clearCookie("token", cookieOptions);
   res.status(200).json({ message: "Logged out" });
 }
 
-// ── GET /api/auth/me ─────────────────────────────────────────────────────────
 export async function getMe(req, res) {
   res.status(200).json({ email: req.user.email, role: req.user.role });
 }
 
-// ── GET /api/auth/users (owner only) ─────────────────────────────────────────
 export async function getAllUsers(req, res) {
   try {
     const users = await User.find().select("-passwordHash").sort({ createdAt: -1 });
@@ -160,7 +171,6 @@ export async function getAllUsers(req, res) {
   }
 }
 
-// ── PUT /api/auth/users/:id/role (owner only) ────────────────────────────────
 export async function updateUserRole(req, res) {
   try {
     const { role } = req.body;
