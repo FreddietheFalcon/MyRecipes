@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { label: "Add Recipe",     to: "/create",           icon: "➕" },
   { label: "Inventory",      to: "/inventory",        icon: "🥫" },
   { label: "Recover Deleted",to: "/trash",            icon: "♻️" },
+  { label: "Friends",        to: "/friends",          icon: "🤝" },
 ];
 
 const Sidebar = () => {
@@ -17,18 +18,26 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const fullPath = pathname + search;
   const [userRole, setUserRole] = useState(null);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
-    const fetchMe = async () => {
+    const fetchData = async () => {
       try {
-        const res = await api.get("/auth/me");
-        setUserRole(res.data.role);
+        const [meRes, friendsRes] = await Promise.all([
+          api.get("/auth/me"),
+          api.get("/friends"),
+        ]);
+        setUserRole(meRes.data.role);
+        const pending = friendsRes.data.filter(
+          (f) => f.status === "pending" && f.direction === "received"
+        );
+        setPendingCount(pending.length);
       } catch {
-        // Not logged in or token expired — axios interceptor handles redirect
+        // Not logged in or token expired
       }
     };
-    fetchMe();
-  }, []);
+    fetchData();
+  }, [pathname]); // re-fetch when page changes so badge stays current
 
   const isActive = (to) => {
     if (to === "/") return pathname === "/" && !search.includes("tab=");
@@ -39,9 +48,7 @@ const Sidebar = () => {
   const handleLogout = async () => {
     try {
       await api.post("/auth/logout");
-    } catch {
-      // Even if the API call fails, redirect to login
-    }
+    } catch { }
     navigate("/login");
     toast.success("Logged out successfully");
   };
@@ -120,7 +127,17 @@ const Sidebar = () => {
             }}
           >
             <span style={{ fontSize: "17px", lineHeight: 1 }}>{icon}</span>
-            <span>{label}</span>
+            <span style={{ flex: 1 }}>{label}</span>
+            {/* Pending badge on Friends link */}
+            {label === "Friends" && pendingCount > 0 && (
+              <span style={{
+                background: "#e5333a", color: "#fff",
+                borderRadius: 50, fontSize: 10, fontWeight: 800,
+                padding: "2px 7px", lineHeight: 1.4,
+              }}>
+                {pendingCount}
+              </span>
+            )}
           </Link>
         );
       })}
@@ -131,9 +148,7 @@ const Sidebar = () => {
           <div style={{ height: "1px", background: "#f0f4f0", margin: "8px 0" }} />
           <Link
             to="/users"
-            style={{
-              ...navLinkStyle(pathname === "/users"),
-            }}
+            style={{ ...navLinkStyle(pathname === "/users") }}
             onMouseEnter={e => {
               if (pathname !== "/users") {
                 e.currentTarget.style.background = "#f4fce8";

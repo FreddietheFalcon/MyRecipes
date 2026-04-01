@@ -9,6 +9,8 @@ import TrashPage from "./pages/TrashPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import UsersPage from "./pages/UsersPage";
+import FriendsPage from "./pages/FriendsPage";
+import FriendRecipesPage from "./pages/FriendRecipesPage";
 
 const App = () => {
   return (
@@ -25,6 +27,8 @@ const App = () => {
         <Route path="/inventory/edit/:id" element={<EditIngredientPage />} />
         <Route path="/trash" element={<TrashPage />} />
         <Route path="/users" element={<UsersPage />} />
+        <Route path="/friends" element={<FriendsPage />} />
+        <Route path="/friends/:friendId/recipes" element={<FriendRecipesPage />} />
       </Routes>
     </div>
   );
