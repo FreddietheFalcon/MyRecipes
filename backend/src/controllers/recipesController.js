@@ -1,8 +1,6 @@
 import Recipe from "../models/Recipe.js";
 
 // ── Input validation ──────────────────────────────────────────────────────────
-// Allowed: letters, numbers, spaces, and common punctuation.
-// Blocks < > { } [ ] \ ` to prevent HTML/JS injection.
 const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\u00C0-\u024F\s'"!?.,\-_()\&@#%+=*/~]+$/;
 const MAX_COMMENT_LENGTH = 500;
 const MAX_NAME_LENGTH = 100;
@@ -31,10 +29,13 @@ function validateStep(text) {
 
 // ── Controllers ───────────────────────────────────────────────────────────────
 
-// GET /api/recipes
-export async function getAllRecipes(_, res) {
+// GET /api/recipes — returns only the logged-in user's recipes
+export async function getAllRecipes(req, res) {
   try {
-    const recipes = await Recipe.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 });
+    const recipes = await Recipe.find({
+      userId: req.user.id,
+      isDeleted: { $ne: true },
+    }).sort({ createdAt: -1 });
     res.status(200).json(recipes);
   } catch (error) {
     console.error("Error in getAllRecipes controller", error);
@@ -42,10 +43,14 @@ export async function getAllRecipes(_, res) {
   }
 }
 
-// GET /api/recipes/trash
-export async function getTrashedRecipes(_, res) {
+// GET /api/recipes/trash — returns only the logged-in user's trashed recipes
+export async function getTrashedRecipes(req, res) {
   try {
-    const trashed = await Recipe.find({ isDeleted: true }).sort({ deletedAt: -1 });
+    const trashed = await Recipe.find({
+      userId: req.user.id,
+      isDeleted: true,
+    }).sort({ deletedAt: -1 });
+
     const now = Date.now();
     const THIRTY_DAYS_MS = 2592000 * 1000;
     const withDaysRemaining = trashed.map((recipe) => {
@@ -63,7 +68,11 @@ export async function getTrashedRecipes(_, res) {
 // GET /api/recipes/:id
 export async function getRecipeByID(req, res) {
   try {
-    const recipe = await Recipe.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+    const recipe = await Recipe.findOne({
+      _id: req.params.id,
+      userId: req.user.id,
+      isDeleted: { $ne: true },
+    });
     if (!recipe) return res.status(404).json({ message: "Recipe not found" });
     res.status(200).json(recipe);
   } catch (error) {
@@ -77,11 +86,9 @@ export async function createRecipe(req, res) {
   try {
     const { name, servings, status, ingredients, steps } = req.body;
 
-    // Validate recipe name
     const nameCheck = validateName(name, "Recipe name");
     if (!nameCheck.valid) return res.status(400).json({ message: nameCheck.message });
 
-    // Validate ingredient names
     if (ingredients?.length) {
       for (const ing of ingredients) {
         if (ing.name?.trim()) {
@@ -91,7 +98,6 @@ export async function createRecipe(req, res) {
       }
     }
 
-    // Validate steps
     if (steps?.length) {
       for (const step of steps) {
         const stepCheck = validateStep(step);
@@ -99,7 +105,8 @@ export async function createRecipe(req, res) {
       }
     }
 
-    const recipe = new Recipe({ name, servings, status, ingredients, steps });
+    // Stamp the recipe with the logged-in user's id
+    const recipe = new Recipe({ userId: req.user.id, name, servings, status, ingredients, steps });
     const saved = await recipe.save();
     res.status(201).json(saved);
   } catch (error) {
@@ -113,13 +120,11 @@ export async function updateRecipe(req, res) {
   try {
     const { name, servings, status, ingredients, steps, comments } = req.body;
 
-    // Validate name if provided
     if (name !== undefined) {
       const nameCheck = validateName(name, "Recipe name");
       if (!nameCheck.valid) return res.status(400).json({ message: nameCheck.message });
     }
 
-    // Validate ingredient names if provided
     if (ingredients?.length) {
       for (const ing of ingredients) {
         if (ing.name?.trim()) {
@@ -129,7 +134,6 @@ export async function updateRecipe(req, res) {
       }
     }
 
-    // Validate steps if provided
     if (steps?.length) {
       for (const step of steps) {
         const stepCheck = validateStep(step);
@@ -146,7 +150,7 @@ export async function updateRecipe(req, res) {
     if (comments !== undefined)    update.comments    = comments;
 
     const updated = await Recipe.findOneAndUpdate(
-      { _id: req.params.id, isDeleted: { $ne: true } },
+      { _id: req.params.id, userId: req.user.id, isDeleted: { $ne: true } },
       update,
       { new: true }
     );
@@ -162,7 +166,7 @@ export async function updateRecipe(req, res) {
 export async function deleteRecipe(req, res) {
   try {
     const deleted = await Recipe.findOneAndUpdate(
-      { _id: req.params.id, isDeleted: { $ne: true } },
+      { _id: req.params.id, userId: req.user.id, isDeleted: { $ne: true } },
       { isDeleted: true, deletedAt: new Date() },
       { new: true }
     );
@@ -178,7 +182,7 @@ export async function deleteRecipe(req, res) {
 export async function restoreRecipe(req, res) {
   try {
     const restored = await Recipe.findOneAndUpdate(
-      { _id: req.params.id, isDeleted: true },
+      { _id: req.params.id, userId: req.user.id, isDeleted: true },
       { isDeleted: false, deletedAt: null },
       { new: true }
     );
@@ -194,13 +198,11 @@ export async function restoreRecipe(req, res) {
 export async function addComment(req, res) {
   try {
     const { text } = req.body;
-
-    // Validate comment text
     const check = validateComment(text);
     if (!check.valid) return res.status(400).json({ message: check.message });
 
     const recipe = await Recipe.findOneAndUpdate(
-      { _id: req.params.id, isDeleted: { $ne: true } },
+      { _id: req.params.id, userId: req.user.id, isDeleted: { $ne: true } },
       { $push: { comments: { text: text.trim() } } },
       { new: true }
     );
@@ -216,7 +218,7 @@ export async function addComment(req, res) {
 export async function deleteComment(req, res) {
   try {
     const recipe = await Recipe.findOneAndUpdate(
-      { _id: req.params.id, isDeleted: { $ne: true } },
+      { _id: req.params.id, userId: req.user.id, isDeleted: { $ne: true } },
       { $pull: { comments: { _id: req.params.commentId } } },
       { new: true }
     );

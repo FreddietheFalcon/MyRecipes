@@ -1,20 +1,34 @@
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import api from "../lib/axios";
 import toast from "react-hot-toast";
 
 const NAV_ITEMS = [
-  { label: "Search",         to: "/",              icon: "🔍" },
-  { label: "Keepers",        to: "/?tab=keeper",   icon: "⭐" },
+  { label: "Search",         to: "/",                 icon: "🔍" },
+  { label: "Keepers",        to: "/?tab=keeper",      icon: "⭐" },
   { label: "Save for Later", to: "/?tab=want_to_try", icon: "🕐" },
-  { label: "Add Recipe",     to: "/create",        icon: "➕" },
-  { label: "Inventory",      to: "/inventory",     icon: "🥫" },
-  { label: "Recover Deleted",to: "/trash",         icon: "♻️" },
+  { label: "Add Recipe",     to: "/create",           icon: "➕" },
+  { label: "Inventory",      to: "/inventory",        icon: "🥫" },
+  { label: "Recover Deleted",to: "/trash",            icon: "♻️" },
 ];
 
 const Sidebar = () => {
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
   const fullPath = pathname + search;
+  const [userRole, setUserRole] = useState(null);
+
+  useEffect(() => {
+    const fetchMe = async () => {
+      try {
+        const res = await api.get("/auth/me");
+        setUserRole(res.data.role);
+      } catch {
+        // Not logged in or token expired — axios interceptor handles redirect
+      }
+    };
+    fetchMe();
+  }, []);
 
   const isActive = (to) => {
     if (to === "/") return pathname === "/" && !search.includes("tab=");
@@ -26,11 +40,27 @@ const Sidebar = () => {
     try {
       await api.post("/auth/logout");
     } catch {
-      // Even if the API call fails, clear local state and redirect
+      // Even if the API call fails, redirect to login
     }
     navigate("/login");
     toast.success("Logged out successfully");
   };
+
+  const navLinkStyle = (active) => ({
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    padding: "10px 14px",
+    borderRadius: "12px",
+    fontSize: "14px",
+    fontWeight: active ? 700 : 600,
+    fontFamily: "'Nunito', sans-serif",
+    textDecoration: "none",
+    transition: "background .15s, color .15s",
+    background: active ? "#e8f9d0" : "transparent",
+    color: active ? "#5aaa10" : "#b0b8c1",
+    border: active ? "1.5px solid #7ed321" : "1.5px solid transparent",
+  });
 
   return (
     <aside style={{
@@ -73,19 +103,7 @@ const Sidebar = () => {
             key={label}
             to={to}
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              padding: "10px 14px",
-              borderRadius: "12px",
-              fontSize: "14px",
-              fontWeight: active ? 700 : 600,
-              fontFamily: "'Nunito', sans-serif",
-              textDecoration: "none",
-              transition: "background .15s, color .15s",
-              background: active ? "#e8f9d0" : "transparent",
-              color: active ? "#5aaa10" : "#b0b8c1",
-              border: active ? "1.5px solid #7ed321" : "1.5px solid transparent",
+              ...navLinkStyle(active),
               marginTop: label === "Recover Deleted" ? "8px" : "0",
             }}
             onMouseEnter={e => {
@@ -107,6 +125,34 @@ const Sidebar = () => {
         );
       })}
 
+      {/* Owner-only: Manage Users */}
+      {userRole === "owner" && (
+        <>
+          <div style={{ height: "1px", background: "#f0f4f0", margin: "8px 0" }} />
+          <Link
+            to="/users"
+            style={{
+              ...navLinkStyle(pathname === "/users"),
+            }}
+            onMouseEnter={e => {
+              if (pathname !== "/users") {
+                e.currentTarget.style.background = "#f4fce8";
+                e.currentTarget.style.color = "#5aaa10";
+              }
+            }}
+            onMouseLeave={e => {
+              if (pathname !== "/users") {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = "#b0b8c1";
+              }
+            }}
+          >
+            <span style={{ fontSize: "17px", lineHeight: 1 }}>👥</span>
+            <span>Manage Users</span>
+          </Link>
+        </>
+      )}
+
       {/* Divider */}
       <div style={{ height: "1px", background: "#f0f4f0", margin: "12px 0" }} />
 
@@ -118,7 +164,6 @@ const Sidebar = () => {
           padding: "10px 14px", borderRadius: "12px",
           fontSize: "14px", fontWeight: 600,
           fontFamily: "'Nunito', sans-serif",
-          textDecoration: "none",
           color: "#b0b8c1",
           border: "1.5px solid transparent",
           background: "transparent",

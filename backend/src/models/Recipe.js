@@ -12,6 +12,9 @@ const ingredientSchema = new mongoose.Schema({
 
 const recipeSchema = new mongoose.Schema(
   {
+    // Owner of this recipe
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: false },
+
     name:        { type: String, required: true },
     servings:    { type: Number },
     status:      { type: String, enum: ["keeper", "want_to_try"], default: "want_to_try" },
@@ -26,10 +29,6 @@ const recipeSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// TTL index: MongoDB automatically and permanently removes a document
-// 30 days (2,592,000 seconds) after deletedAt is set.
-// partialFilterExpression ensures only soft-deleted docs are affected —
-// active recipes with deletedAt: null are never touched.
 recipeSchema.index(
   { deletedAt: 1 },
   {

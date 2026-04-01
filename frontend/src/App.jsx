@@ -8,6 +8,7 @@ import InventoryPage from "./pages/InventoryPage";
 import TrashPage from "./pages/TrashPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import UsersPage from "./pages/UsersPage";
 
 const App = () => {
   return (
@@ -23,6 +24,7 @@ const App = () => {
         <Route path="/inventory/add" element={<AddIngredientPage />} />
         <Route path="/inventory/edit/:id" element={<EditIngredientPage />} />
         <Route path="/trash" element={<TrashPage />} />
+        <Route path="/users" element={<UsersPage />} />
       </Routes>
     </div>
   );
