@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router";
 import Sidebar from "../components/Sidebar";
 import api from "../lib/axios";
 import toast from "react-hot-toast";
@@ -71,7 +70,7 @@ const FriendsPage = () => {
         {/* Header */}
         <h1 className="page-title" style={{ marginBottom: 8 }}>🤝 Friends</h1>
         <p style={{ fontSize: 13, color: "var(--gray)", fontWeight: 600, marginBottom: 28 }}>
-          Connect with friends to browse each other's recipes.
+          Connect with friends to see each other's recipes on the home page.
         </p>
 
         {/* Send friend request */}
@@ -158,25 +157,16 @@ const FriendsPage = () => {
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{f.friend.email}</div>
                       <div style={{ fontSize: 12, color: "var(--gray)", fontWeight: 600, marginTop: 2 }}>
-                        ✅ Connected
+                        ✅ Connected · recipes visible on your home page
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <Link
-                        to={`/friends/${f.friend._id}/recipes`}
-                        className="btn-primary"
-                        style={{ fontSize: 12, padding: "8px 16px", textDecoration: "none" }}
-                      >
-                        🍳 View Recipes
-                      </Link>
-                      <button
-                        onClick={() => handleRemove(f._id, "Remove this friend")}
-                        className="btn-ghost"
-                        style={{ fontSize: 12, padding: "6px 14px", color: "var(--red)", borderColor: "#ffdcdd" }}
-                      >
-                        Remove
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => handleRemove(f._id, "Remove this friend")}
+                      className="btn-ghost"
+                      style={{ fontSize: 12, padding: "6px 14px", color: "var(--red)", borderColor: "#ffdcdd" }}
+                    >
+                      Remove
+                    </button>
                   </div>
                 ))
               )}

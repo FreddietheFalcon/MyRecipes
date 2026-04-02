@@ -4,7 +4,7 @@ import api from "../lib/axios";
 import toast from "react-hot-toast";
 
 const NAV_ITEMS = [
-  { label: "Search",         to: "/",                 icon: "🔍" },
+  { label: "Search",         to: "/?tab=all",          icon: "🔍" },
   { label: "Keepers",        to: "/?tab=keeper",      icon: "⭐" },
   { label: "Save for Later", to: "/?tab=want_to_try", icon: "🕐" },
   { label: "Add Recipe",     to: "/create",           icon: "➕" },

@@ -6,18 +6,40 @@ import api from "../lib/axios";
 import toast from "react-hot-toast";
 
 const HomePage = () => {
-  const [recipes, setRecipes] = useState([]);
+  const [myRecipes, setMyRecipes] = useState([]);
+  const [friendRecipes, setFriendRecipes] = useState([]); // [{ recipe, friendEmail, friendId }]
   const [loading, setLoading] = useState(true);
   const [isRateLimited, setIsRateLimited] = useState(false);
   const [search, setSearch] = useState("");
   const [searchParams] = useSearchParams();
-  const tab = searchParams.get("tab") || "keeper";
+  const tab = searchParams.get("tab") || "all";
 
   useEffect(() => {
-    const fetchRecipes = async () => {
+    const fetchAll = async () => {
       try {
-        const res = await api.get("/recipes");
-        setRecipes(res.data);
+        // Fetch my recipes
+        const myRes = await api.get("/recipes");
+        setMyRecipes(myRes.data);
+
+        // Fetch accepted friends and their recipes
+        const friendsRes = await api.get("/friends");
+        const accepted = friendsRes.data.filter((f) => f.status === "accepted");
+
+        const friendData = await Promise.all(
+          accepted.map(async (f) => {
+            try {
+              const res = await api.get(`/friends/${f.friend._id}/recipes`);
+              return res.data.recipes.map((r) => ({
+                recipe: r,
+                friendEmail: f.friend.email,
+                friendId: f.friend._id,
+              }));
+            } catch {
+              return [];
+            }
+          })
+        );
+        setFriendRecipes(friendData.flat());
       } catch (error) {
         if (error.response?.status === 429) setIsRateLimited(true);
         else toast.error("Failed to load recipes");
@@ -25,16 +47,23 @@ const HomePage = () => {
         setLoading(false);
       }
     };
-    fetchRecipes();
+    fetchAll();
   }, []);
 
-  const filtered = recipes.filter((r) => {
+  // Combine all recipes for filtering
+  const allRecipes = [
+    ...myRecipes.map((r) => ({ recipe: r, isMine: true })),
+    ...friendRecipes.map((f) => ({ recipe: f.recipe, isMine: false, friendEmail: f.friendEmail, friendId: f.friendId })),
+  ];
+
+  const filtered = allRecipes.filter(({ recipe }) => {
     const q = search.toLowerCase().trim();
-    const matchTab = q ? true : r.status === tab;
+    const matchTab =
+      tab === "all" ? true : recipe.status === tab;
     const matchSearch =
       !q ||
-      r.name.toLowerCase().includes(q) ||
-      r.ingredients?.some((i) => i.name.toLowerCase().includes(q));
+      recipe.name.toLowerCase().includes(q) ||
+      recipe.ingredients?.some((i) => i.name.toLowerCase().includes(q));
     return matchTab && matchSearch;
   });
 
@@ -60,6 +89,7 @@ const HomePage = () => {
 
         {/* Tabs */}
         <div className="tabs-row">
+          <Link to="/?tab=all" className={`tab-item ${tab === "all" ? "active" : ""}`}>All</Link>
           <Link to="/?tab=keeper" className={`tab-item ${tab === "keeper" ? "active" : ""}`}>Keepers</Link>
           <Link to="/?tab=want_to_try" className={`tab-item ${tab === "want_to_try" ? "active" : ""}`}>Save for Later</Link>
         </div>
@@ -71,7 +101,9 @@ const HomePage = () => {
           </div>
         )}
 
-        {loading && <div style={{ textAlign: "center", color: "var(--gray)", padding: "48px 0" }}>Loading recipes...</div>}
+        {loading && (
+          <div style={{ textAlign: "center", color: "var(--gray)", padding: "48px 0" }}>Loading recipes...</div>
+        )}
 
         {!loading && filtered.length === 0 && (
           <div className="empty-state">
@@ -83,8 +115,13 @@ const HomePage = () => {
 
         {!loading && filtered.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {filtered.map((r, i) => (
-              <Link key={r._id} to={`/recipe/${r._id}`} className="recipe-pill" style={{ animationDelay: `${i * 0.05}s` }}>
+            {filtered.map(({ recipe: r, isMine, friendEmail, friendId }, i) => (
+              <Link
+                key={`${isMine ? "mine" : friendId}-${r._id}`}
+                to={isMine ? `/recipe/${r._id}` : `/friends/${friendId}/recipes/${r._id}`}
+                className="recipe-pill"
+                style={{ animationDelay: `${i * 0.05}s` }}
+              >
                 <div className="recipe-pill-left">
                   <div>
                     <div className="recipe-pill-name">{r.name}</div>
@@ -92,6 +129,19 @@ const HomePage = () => {
                       {r.servings ? `👥 ${r.servings} servings` : ""}
                       {r.servings && r.ingredients?.length ? " · " : ""}
                       {r.ingredients?.length ? `🥘 ${r.ingredients.length} ingredients` : ""}
+                      {!isMine && (
+                        <span style={{
+                          marginLeft: 6,
+                          background: "#f0f4ff",
+                          color: "#3b6fd4",
+                          border: "1px solid #a0b8f0",
+                          borderRadius: 50,
+                          fontSize: 10, fontWeight: 800,
+                          padding: "1px 8px",
+                        }}>
+                          👁 {friendEmail}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
