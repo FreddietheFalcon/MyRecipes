@@ -10,28 +10,25 @@ import {
   addComment,
   deleteComment,
 } from "../controllers/recipesController.js";
-import { requireAuth, requireOwner } from "../middleware/authMiddleware.js";
+import { requireAuth } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 // All recipe routes require login
+// No requireOwner here — every user owns their own recipes
 router.use(requireAuth);
 
 // IMPORTANT: /trash must come before /:id
 router.get("/trash", getTrashedRecipes);
 
-// Both owners and viewers can read
 router.get("/", getAllRecipes);
 router.get("/:id", getRecipeByID);
+router.post("/", createRecipe);
+router.put("/:id", updateRecipe);
+router.delete("/:id", deleteRecipe);
+router.put("/:id/restore", restoreRecipe);
 
-// Only owners can write
-router.post("/", requireOwner, createRecipe);
-router.put("/:id", requireOwner, updateRecipe);
-router.delete("/:id", requireOwner, deleteRecipe);
-router.put("/:id/restore", requireOwner, restoreRecipe);
-
-// Comments — viewers can add comments, only owners can delete them
 router.post("/:id/comments", addComment);
-router.delete("/:id/comments/:commentId", requireOwner, deleteComment);
+router.delete("/:id/comments/:commentId", deleteComment);
 
 export default router;
