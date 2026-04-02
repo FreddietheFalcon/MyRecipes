@@ -30,7 +30,7 @@ const HomePage = () => {
               return res.data.recipes.map((r) => ({
                 recipe: r,
                 friendEmail: f.friend.email,
-                friendId: f.friend._id,
+                friendId: f.friend._id.toString(),
               }));
             } catch {
               return [];

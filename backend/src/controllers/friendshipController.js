@@ -102,8 +102,6 @@ export async function getFriendRecipes(req, res) {
   try {
     const friendId = req.params.friendId;
 
-    console.log("getFriendRecipes — req.user.id:", req.user.id);
-    console.log("getFriendRecipes — friendId:", friendId);
 
     const friendship = await Friendship.findOne({
       status: "accepted",
@@ -113,7 +111,6 @@ export async function getFriendRecipes(req, res) {
       ],
     });
 
-    console.log("getFriendRecipes — friendship found:", friendship?._id || "NONE");
 
     if (!friendship) {
       return res.status(403).json({ message: "You are not friends with this user" });
@@ -124,7 +121,6 @@ export async function getFriendRecipes(req, res) {
       isDeleted: { $ne: true },
     }).sort({ createdAt: -1 });
 
-    console.log("getFriendRecipes — recipes found:", recipes.length);
 
     const friend = await User.findById(friendId).select("email");
 
