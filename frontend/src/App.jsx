@@ -13,6 +13,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import FriendsPage from "./pages/FriendsPage";
 import FriendRecipesPage from "./pages/FriendRecipesPage";
+import FriendRecipeDetailPage from "./pages/FriendRecipeDetailPage";
 
 const ProtectedRoute = ({ children }) => {
   const [status, setStatus] = useState("checking");
@@ -44,6 +45,7 @@ const App = () => {
         <Route path="/trash" element={<ProtectedRoute><TrashPage /></ProtectedRoute>} />
         <Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
         <Route path="/friends/:friendId/recipes" element={<ProtectedRoute><FriendRecipesPage /></ProtectedRoute>} />
+        <Route path="/friends/:friendId/recipes/:recipeId" element={<ProtectedRoute><FriendRecipeDetailPage /></ProtectedRoute>} />
       </Routes>
     </div>
   );
