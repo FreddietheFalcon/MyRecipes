@@ -3,7 +3,6 @@ import User from "../models/User.js";
 import Recipe from "../models/Recipe.js";
 
 // ── POST /api/friends/request ─────────────────────────────────────────────────
-// Send a friend request by email
 export async function sendRequest(req, res) {
   try {
     const { email } = req.body;
@@ -15,7 +14,6 @@ export async function sendRequest(req, res) {
       return res.status(400).json({ message: "You cannot send a friend request to yourself" });
     }
 
-    // Check if friendship already exists in either direction
     const existing = await Friendship.findOne({
       $or: [
         { requester: req.user.id, recipient: recipient._id },
@@ -41,7 +39,6 @@ export async function sendRequest(req, res) {
 }
 
 // ── PUT /api/friends/:id/accept ───────────────────────────────────────────────
-// Accept a pending friend request
 export async function acceptRequest(req, res) {
   try {
     const friendship = await Friendship.findOneAndUpdate(
@@ -58,7 +55,6 @@ export async function acceptRequest(req, res) {
 }
 
 // ── DELETE /api/friends/:id ───────────────────────────────────────────────────
-// Deny a pending request OR remove an existing friendship
 export async function removeOrDeny(req, res) {
   try {
     const friendship = await Friendship.findOneAndDelete({
@@ -74,7 +70,6 @@ export async function removeOrDeny(req, res) {
 }
 
 // ── GET /api/friends ──────────────────────────────────────────────────────────
-// Get all friendships for the logged-in user (accepted + pending)
 export async function getFriends(req, res) {
   try {
     const friendships = await Friendship.find({
@@ -84,7 +79,6 @@ export async function getFriends(req, res) {
       .populate("recipient", "email")
       .sort({ createdAt: -1 });
 
-    // Shape the response so the frontend always knows who "the other person" is
     const shaped = friendships.map((f) => {
       const isRequester = f.requester._id.toString() === req.user.id;
       return {
@@ -103,13 +97,14 @@ export async function getFriends(req, res) {
   }
 }
 
-// ── GET /api/friends/:id/recipes ──────────────────────────────────────────────
-// Browse a friend's recipes (only works if friendship is accepted)
+// ── GET /api/friends/:friendId/recipes ───────────────────────────────────────
 export async function getFriendRecipes(req, res) {
   try {
-    const friendId = req.params.id;
+    const friendId = req.params.friendId;
 
-    // Verify an accepted friendship exists between the two users
+    console.log("getFriendRecipes — req.user.id:", req.user.id);
+    console.log("getFriendRecipes — friendId:", friendId);
+
     const friendship = await Friendship.findOne({
       status: "accepted",
       $or: [
@@ -117,6 +112,8 @@ export async function getFriendRecipes(req, res) {
         { requester: friendId, recipient: req.user.id },
       ],
     });
+
+    console.log("getFriendRecipes — friendship found:", friendship?._id || "NONE");
 
     if (!friendship) {
       return res.status(403).json({ message: "You are not friends with this user" });
@@ -126,6 +123,8 @@ export async function getFriendRecipes(req, res) {
       userId: friendId,
       isDeleted: { $ne: true },
     }).sort({ createdAt: -1 });
+
+    console.log("getFriendRecipes — recipes found:", recipes.length);
 
     const friend = await User.findById(friendId).select("email");
 
@@ -137,7 +136,6 @@ export async function getFriendRecipes(req, res) {
 }
 
 // ── GET /api/friends/:friendId/recipes/:recipeId ──────────────────────────────
-// Get a single recipe from a friend (only works if friendship is accepted)
 export async function getFriendRecipeById(req, res) {
   try {
     const { friendId, recipeId } = req.params;
