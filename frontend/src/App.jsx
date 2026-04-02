@@ -15,37 +15,41 @@ import FriendsPage from "./pages/FriendsPage";
 import FriendRecipesPage from "./pages/FriendRecipesPage";
 import FriendRecipeDetailPage from "./pages/FriendRecipeDetailPage";
 
-const ProtectedRoute = ({ children }) => {
-  const [status, setStatus] = useState("checking");
+const App = () => {
+  const [authStatus, setAuthStatus] = useState("checking");
 
   useEffect(() => {
     api.get("/auth/me")
-      .then(() => setStatus("ok"))
-      .catch(() => setStatus("denied"));
+      .then(() => setAuthStatus("ok"))
+      .catch(() => setAuthStatus("denied"));
   }, []);
 
-  if (status === "checking") return null;
-  if (status === "denied") return <Navigate to="/login" replace />;
-  return children;
-};
+  // Show nothing while checking auth on first load
+  if (authStatus === "checking") return null;
 
-const App = () => {
   return (
     <div className="relative h-full w-full">
       <div className="absolute inset-0 -z-10 h-full w-full items-center px-5 py-24 [background:radial-gradient(125%_125%_at_50%_10%,#000_60%,#0000_100%)]" />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-        <Route path="/create" element={<ProtectedRoute><CreatePage /></ProtectedRoute>} />
-        <Route path="/recipe/:id" element={<ProtectedRoute><RecipeDetailPage /></ProtectedRoute>} />
-        <Route path="/inventory" element={<ProtectedRoute><InventoryPage /></ProtectedRoute>} />
-        <Route path="/inventory/add" element={<ProtectedRoute><AddIngredientPage /></ProtectedRoute>} />
-        <Route path="/inventory/edit/:id" element={<ProtectedRoute><EditIngredientPage /></ProtectedRoute>} />
-        <Route path="/trash" element={<ProtectedRoute><TrashPage /></ProtectedRoute>} />
-        <Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
-        <Route path="/friends/:friendId/recipes" element={<ProtectedRoute><FriendRecipesPage /></ProtectedRoute>} />
-        <Route path="/friends/:friendId/recipes/:recipeId" element={<ProtectedRoute><FriendRecipeDetailPage /></ProtectedRoute>} />
+
+        {authStatus === "ok" ? (
+          <>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/create" element={<CreatePage />} />
+            <Route path="/recipe/:id" element={<RecipeDetailPage />} />
+            <Route path="/inventory" element={<InventoryPage />} />
+            <Route path="/inventory/add" element={<AddIngredientPage />} />
+            <Route path="/inventory/edit/:id" element={<EditIngredientPage />} />
+            <Route path="/trash" element={<TrashPage />} />
+            <Route path="/friends" element={<FriendsPage />} />
+            <Route path="/friends/:friendId/recipes" element={<FriendRecipesPage />} />
+            <Route path="/friends/:friendId/recipes/:recipeId" element={<FriendRecipeDetailPage />} />
+          </>
+        ) : (
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        )}
       </Routes>
     </div>
   );
