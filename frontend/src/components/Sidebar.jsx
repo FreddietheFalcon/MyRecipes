@@ -17,18 +17,13 @@ const Sidebar = () => {
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
   const fullPath = pathname + search;
-  const [userRole, setUserRole] = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchPending = async () => {
       try {
-        const [meRes, friendsRes] = await Promise.all([
-          api.get("/auth/me"),
-          api.get("/friends"),
-        ]);
-        setUserRole(meRes.data.role);
-        const pending = friendsRes.data.filter(
+        const res = await api.get("/friends");
+        const pending = res.data.filter(
           (f) => f.status === "pending" && f.direction === "received"
         );
         setPendingCount(pending.length);
@@ -36,8 +31,8 @@ const Sidebar = () => {
         // Not logged in or token expired
       }
     };
-    fetchData();
-  }, [pathname]); // re-fetch when page changes so badge stays current
+    fetchPending();
+  }, [pathname]);
 
   const isActive = (to) => {
     if (to === "/") return pathname === "/" && !search.includes("tab=");
@@ -128,7 +123,6 @@ const Sidebar = () => {
           >
             <span style={{ fontSize: "17px", lineHeight: 1 }}>{icon}</span>
             <span style={{ flex: 1 }}>{label}</span>
-            {/* Pending badge on Friends link */}
             {label === "Friends" && pendingCount > 0 && (
               <span style={{
                 background: "#e5333a", color: "#fff",
@@ -141,32 +135,6 @@ const Sidebar = () => {
           </Link>
         );
       })}
-
-      {/* Owner-only: Manage Users */}
-      {userRole === "owner" && (
-        <>
-          <div style={{ height: "1px", background: "#f0f4f0", margin: "8px 0" }} />
-          <Link
-            to="/users"
-            style={{ ...navLinkStyle(pathname === "/users") }}
-            onMouseEnter={e => {
-              if (pathname !== "/users") {
-                e.currentTarget.style.background = "#f4fce8";
-                e.currentTarget.style.color = "#5aaa10";
-              }
-            }}
-            onMouseLeave={e => {
-              if (pathname !== "/users") {
-                e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = "#b0b8c1";
-              }
-            }}
-          >
-            <span style={{ fontSize: "17px", lineHeight: 1 }}>👥</span>
-            <span>Manage Users</span>
-          </Link>
-        </>
-      )}
 
       {/* Divider */}
       <div style={{ height: "1px", background: "#f0f4f0", margin: "12px 0" }} />

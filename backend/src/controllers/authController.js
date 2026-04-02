@@ -11,8 +11,6 @@ const redis = new Redis({
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
 const sendOTPEmail = async (email, otp) => {
   await resend.emails.send({
     from: "My Recipes <noreply@kaebauder.com>",
@@ -33,7 +31,7 @@ const generateOTP = () => String(Math.floor(100000 + Math.random() * 900000));
 
 const issueJWT = (user) =>
   jwt.sign(
-    { id: user._id, email: user.email, role: user.role },
+    { id: user._id, email: user.email },
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
@@ -49,17 +47,14 @@ const cookieOptions = {
 export async function register(req, res) {
   try {
     const email = req.body.email?.toLowerCase().trim();
-    const { password, role } = req.body;
+    const { password } = req.body;
     if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
 
     const existing = await User.findOne({ email });
     if (existing) return res.status(409).json({ message: "Email already registered" });
 
     const passwordHash = await bcrypt.hash(password, 12);
-    const userCount = await User.countDocuments();
-    const assignedRole = userCount === 0 ? "owner" : (role || "viewer");
-
-    await User.create({ email, passwordHash, role: assignedRole });
+    await User.create({ email, passwordHash });
 
     const otp = generateOTP();
     await redis.set(`otp:${email}`, otp, { ex: 600 });
@@ -122,7 +117,7 @@ export async function verifyOTP(req, res) {
 
     const token = issueJWT(user);
     res.cookie("token", token, cookieOptions);
-    res.status(200).json({ message: "Logged in successfully", user: { email: user.email, role: user.role } });
+    res.status(200).json({ message: "Logged in successfully", user: { email: user.email } });
   } catch (error) {
     console.error("Error in verifyOTP controller", error);
     res.status(500).json({ message: "Internal server error" });
@@ -137,36 +132,5 @@ export async function logout(req, res) {
 
 // ── GET /api/auth/me ─────────────────────────────────────────────────────────
 export async function getMe(req, res) {
-  res.status(200).json({ email: req.user.email, role: req.user.role });
-}
-
-// ── GET /api/auth/users (owner only) ─────────────────────────────────────────
-export async function getAllUsers(req, res) {
-  try {
-    const users = await User.find().select("-passwordHash").sort({ createdAt: -1 });
-    res.status(200).json(users);
-  } catch (error) {
-    console.error("Error in getAllUsers controller", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-}
-
-// ── PUT /api/auth/users/:id/role (owner only) ────────────────────────────────
-export async function updateUserRole(req, res) {
-  try {
-    const { role } = req.body;
-    if (!["owner", "viewer"].includes(role)) return res.status(400).json({ message: "Invalid role" });
-
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { role },
-      { new: true }
-    ).select("-passwordHash");
-
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.status(200).json(user);
-  } catch (error) {
-    console.error("Error in updateUserRole controller", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
+  res.status(200).json({ email: req.user.email });
 }

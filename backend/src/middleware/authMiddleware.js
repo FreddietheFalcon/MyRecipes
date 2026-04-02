@@ -13,11 +13,3 @@ export function requireAuth(req, res, next) {
     return res.status(401).json({ message: "Invalid or expired session" });
   }
 }
-
-// Must be used AFTER requireAuth
-export function requireOwner(req, res, next) {
-  if (req.user?.role !== "owner") {
-    return res.status(403).json({ message: "Owner access required" });
-  }
-  next();
-}

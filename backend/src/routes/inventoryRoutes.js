@@ -6,13 +6,12 @@ import {
   updateIngredient,
   deleteIngredient,
 } from "../controllers/inventoryController.js";
-import { requireAuth, requireOwner } from "../middleware/authMiddleware.js";
+import { requireAuth } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// All inventory routes require login AND owner role
+// All inventory routes require login only — every user manages their own inventory
 router.use(requireAuth);
-router.use(requireOwner);
 
 router.get("/", getAllIngredients);
 router.get("/:id", getIngredientById);
