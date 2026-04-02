@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 
 const HomePage = () => {
   const [myRecipes, setMyRecipes] = useState([]);
-  const [friendRecipes, setFriendRecipes] = useState([]); // [{ recipe, friendEmail, friendId }]
+  const [friendRecipes, setFriendRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isRateLimited, setIsRateLimited] = useState(false);
   const [search, setSearch] = useState("");
@@ -17,11 +17,9 @@ const HomePage = () => {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        // Fetch my recipes
         const myRes = await api.get("/recipes");
         setMyRecipes(myRes.data);
 
-        // Fetch accepted friends and their recipes
         const friendsRes = await api.get("/friends");
         const accepted = friendsRes.data.filter((f) => f.status === "accepted");
 
@@ -50,16 +48,18 @@ const HomePage = () => {
     fetchAll();
   }, []);
 
-  // Combine all recipes for filtering
-  const allRecipes = [
+  const allItems = [
     ...myRecipes.map((r) => ({ recipe: r, isMine: true })),
     ...friendRecipes.map((f) => ({ recipe: f.recipe, isMine: false, friendEmail: f.friendEmail, friendId: f.friendId })),
   ];
 
-  const filtered = allRecipes.filter(({ recipe }) => {
+  const filtered = allItems.filter(({ recipe, isMine }) => {
     const q = search.toLowerCase().trim();
     const matchTab =
-      tab === "all" ? true : recipe.status === tab;
+      tab === "all" ? true :
+      tab === "keeper" ? (isMine && recipe.status === "keeper") :
+      tab === "want_to_try" ? (isMine && recipe.status === "want_to_try") :
+      true;
     const matchSearch =
       !q ||
       recipe.name.toLowerCase().includes(q) ||
@@ -87,14 +87,13 @@ const HomePage = () => {
           <Link to="/create" className="btn-outline-red">+ Add Recipe</Link>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs — All, Keepers, Save for Later only */}
         <div className="tabs-row">
           <Link to="/?tab=all" className={`tab-item ${tab === "all" ? "active" : ""}`}>All</Link>
           <Link to="/?tab=keeper" className={`tab-item ${tab === "keeper" ? "active" : ""}`}>Keepers</Link>
           <Link to="/?tab=want_to_try" className={`tab-item ${tab === "want_to_try" ? "active" : ""}`}>Save for Later</Link>
         </div>
 
-        {/* Search label */}
         {search && (
           <div style={{ fontSize: 13, color: "var(--gray)", fontWeight: 600, marginBottom: 14 }}>
             Results for: <span style={{ color: "var(--green-dark)", fontWeight: 800 }}>"{search}"</span>
@@ -132,23 +131,32 @@ const HomePage = () => {
                       {!isMine && (
                         <span style={{
                           marginLeft: 6,
-                          background: "#f0f4ff",
-                          color: "#3b6fd4",
+                          background: "#f0f4ff", color: "#3b6fd4",
                           border: "1px solid #a0b8f0",
-                          borderRadius: 50,
-                          fontSize: 10, fontWeight: 800,
+                          borderRadius: 50, fontSize: 10, fontWeight: 800,
                           padding: "1px 8px",
                         }}>
-                          👁 {friendEmail}
+                          {friendEmail}
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
                 <div className="recipe-pill-right">
-                  <span className={r.status === "keeper" ? "badge-keeper" : "badge-later"}>
-                    {r.status === "keeper" ? "⭐ Keeper" : "🕐 Later"}
-                  </span>
+                  {isMine ? (
+                    <span className={r.status === "keeper" ? "badge-keeper" : "badge-later"}>
+                      {r.status === "keeper" ? "⭐ Keeper" : "🕐 Later"}
+                    </span>
+                  ) : (
+                    <span style={{
+                      background: "#f0f4ff", color: "#3b6fd4",
+                      border: "1.5px solid #a0b8f0",
+                      borderRadius: 50, fontSize: 11, fontWeight: 800,
+                      padding: "3px 12px",
+                    }}>
+                      👁 View Only
+                    </span>
+                  )}
                   <span className="pill-arrow">›</span>
                 </div>
               </Link>
