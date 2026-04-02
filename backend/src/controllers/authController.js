@@ -15,7 +15,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendOTPEmail = async (email, otp) => {
   await resend.emails.send({
-    from: "My Recipes <onboarding@resend.dev>",
+    from: "My Recipes <noreply@kaebauder.com>",
     to: email,
     subject: "Your My Recipes login code",
     html: `
