@@ -135,3 +135,38 @@ export async function getFriendRecipes(req, res) {
     res.status(500).json({ message: "Internal server error" });
   }
 }
+
+// ── GET /api/friends/:friendId/recipes/:recipeId ──────────────────────────────
+// Get a single recipe from a friend (only works if friendship is accepted)
+export async function getFriendRecipeById(req, res) {
+  try {
+    const { friendId, recipeId } = req.params;
+
+    const friendship = await Friendship.findOne({
+      status: "accepted",
+      $or: [
+        { requester: req.user.id, recipient: friendId },
+        { requester: friendId, recipient: req.user.id },
+      ],
+    });
+
+    if (!friendship) {
+      return res.status(403).json({ message: "You are not friends with this user" });
+    }
+
+    const recipe = await Recipe.findOne({
+      _id: recipeId,
+      userId: friendId,
+      isDeleted: { $ne: true },
+    });
+
+    if (!recipe) return res.status(404).json({ message: "Recipe not found" });
+
+    const friend = await User.findById(friendId).select("email");
+
+    res.status(200).json({ friend, recipe });
+  } catch (error) {
+    console.error("Error in getFriendRecipeById", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}

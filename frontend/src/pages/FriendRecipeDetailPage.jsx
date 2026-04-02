@@ -11,20 +11,18 @@ const FriendRecipeDetailPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchRecipe = async () => {
       try {
-        const res = await api.get(`/friends/${friendId}/recipes`);
+        const res = await api.get(`/friends/${friendId}/recipes/${recipeId}`);
         setFriend(res.data.friend);
-        const found = res.data.recipes.find((r) => r._id.toString() === recipeId);
-        if (!found) toast.error("Recipe not found");
-        else setRecipe(found);
+        setRecipe(res.data.recipe);
       } catch (error) {
         toast.error(error.response?.data?.message || "Failed to load recipe");
       } finally {
         setLoading(false);
       }
     };
-    fetch();
+    fetchRecipe();
   }, [friendId, recipeId]);
 
   if (loading) {
@@ -96,7 +94,7 @@ const FriendRecipeDetailPage = () => {
           {/* Left: Ingredients */}
           <div>
             <div className="section-heading">Ingredients</div>
-            {recipe.ingredients?.length === 0 && (
+            {(!recipe.ingredients || recipe.ingredients.length === 0) && (
               <p style={{ fontSize: 13, color: "var(--gray)" }}>No ingredients listed.</p>
             )}
             {recipe.ingredients?.map((ing, i) => (
@@ -115,7 +113,7 @@ const FriendRecipeDetailPage = () => {
           {/* Right: Steps + Comments */}
           <div>
             <div className="section-heading">Instructions</div>
-            {recipe.steps?.length === 0 && (
+            {(!recipe.steps || recipe.steps.length === 0) && (
               <p style={{ fontSize: 13, color: "var(--gray)" }}>No steps listed.</p>
             )}
             {recipe.steps?.map((step, i) => (
@@ -152,7 +150,6 @@ const FriendRecipeDetailPage = () => {
             )}
           </div>
         </div>
-
       </main>
     </div>
   );

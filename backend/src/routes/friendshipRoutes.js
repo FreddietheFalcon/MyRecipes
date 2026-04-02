@@ -5,18 +5,19 @@ import {
   removeOrDeny,
   getFriends,
   getFriendRecipes,
+  getFriendRecipeById,
 } from "../controllers/friendshipController.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// All friendship routes require login
 router.use(requireAuth);
 
 router.get("/", getFriends);
 router.post("/request", sendRequest);
 router.put("/:id/accept", acceptRequest);
 router.delete("/:id", removeOrDeny);
-router.get("/:id/recipes", getFriendRecipes);
+router.get("/:friendId/recipes", getFriendRecipes);
+router.get("/:friendId/recipes/:recipeId", getFriendRecipeById);
 
 export default router;
