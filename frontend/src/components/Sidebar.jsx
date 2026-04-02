@@ -4,13 +4,11 @@ import api from "../lib/axios";
 import toast from "react-hot-toast";
 
 const NAV_ITEMS = [
-  { label: "Search",         to: "/?tab=all",          icon: "🔍" },
-  { label: "Keepers",        to: "/?tab=keeper",      icon: "⭐" },
-  { label: "Save for Later", to: "/?tab=want_to_try", icon: "🕐" },
-  { label: "Add Recipe",     to: "/create",           icon: "➕" },
-  { label: "Inventory",      to: "/inventory",        icon: "🥫" },
-  { label: "Recover Deleted",to: "/trash",            icon: "♻️" },
-  { label: "Friends",        to: "/friends",          icon: "🤝" },
+  { label: "Search",         to: "/",          icon: "🔍" },
+  { label: "Add Recipe",     to: "/create",    icon: "➕" },
+  { label: "Inventory",      to: "/inventory", icon: "🥫" },
+  { label: "Recover Deleted",to: "/trash",     icon: "♻️" },
+  { label: "Friends",        to: "/friends",   icon: "🤝" },
 ];
 
 const Sidebar = () => {
