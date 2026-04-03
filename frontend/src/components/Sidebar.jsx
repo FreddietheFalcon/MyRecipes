@@ -18,18 +18,21 @@ const Sidebar = () => {
   const fullPath = pathname + search;
   const [pendingFriends, setPendingFriends] = useState(0);
   const [pendingCopies, setPendingCopies] = useState(0);
+  const [userEmail, setUserEmail] = useState("");
 
   useEffect(() => {
     const fetchBadges = async () => {
       try {
-        const [friendsRes, copyRes] = await Promise.all([
+        const [friendsRes, copyRes, meRes] = await Promise.all([
           api.get("/friends"),
           api.get("/share-requests/incoming"),
+          api.get("/auth/me"),
         ]);
         setPendingFriends(
           friendsRes.data.filter((f) => f.status === "pending" && f.direction === "received").length
         );
         setPendingCopies(copyRes.data.length);
+        setUserEmail(meRes.data.email);
       } catch {
         // Not logged in
       }
@@ -99,6 +102,19 @@ const Sidebar = () => {
           My Recipes
         </span>
       </div>
+
+      {/* User email */}
+      {userEmail && (
+        <div style={{
+          fontSize: 11, fontWeight: 700, color: "var(--gray)",
+          background: "var(--gray-light)", borderRadius: 8,
+          padding: "6px 10px", marginBottom: 8,
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          letterSpacing: ".01em",
+        }} title={userEmail}>
+          👤 {userEmail}
+        </div>
+      )}
 
       {/* Nav links */}
       {NAV_ITEMS.map(({ label, to, icon }) => {
