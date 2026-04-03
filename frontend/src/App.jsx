@@ -25,7 +25,7 @@ const App = () => {
   }, []);
 
   // Show nothing while checking auth on first load
-  if (authStatus === "checking") return null;
+  if (authStatus === "checking") return <div style={{ minHeight: "100vh", background: "#f5f5f5" }} />;
 
   return (
     <div className="relative h-full w-full">
