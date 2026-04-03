@@ -52,8 +52,8 @@ const HomePage = () => {
                 .filter((r) => r.userId?.toString() !== myUserId?.toString())
                 // Don't show recipes you already have an approved copy of
                 .filter((r) => !approvedOriginalIds.has(r._id.toString()))
-                // Don't show copies of your own recipes that friends made
-                .filter((r) => !copiedFromMeIds.has(r._id.toString()))
+                // Don't show copies of your own recipes (identified by copiedFromEmail)
+                .filter((r) => r.copiedFromEmail !== meRes.data.email)
                 .map((r) => ({
                   recipe: r,
                   friendEmail: f.friend.email,
