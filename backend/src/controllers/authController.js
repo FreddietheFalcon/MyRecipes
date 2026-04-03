@@ -132,5 +132,5 @@ export async function logout(req, res) {
 
 // ── GET /api/auth/me ─────────────────────────────────────────────────────────
 export async function getMe(req, res) {
-  res.status(200).json({ email: req.user.email });
+  res.status(200).json({ id: req.user.id, email: req.user.email });
 }

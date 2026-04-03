@@ -17,15 +17,17 @@ const HomePage = () => {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [myRes, friendsRes, myRequestsRes] = await Promise.all([
+        const [myRes, friendsRes, myRequestsRes, meRes] = await Promise.all([
           api.get("/recipes"),
           api.get("/friends"),
           api.get("/share-requests/my"),
+          api.get("/auth/me"),
         ]);
 
+        const myUserId = meRes.data.id || meRes.data._id;
         setMyRecipes(myRes.data);
 
-        // Build a set of recipeIds that have already been approved (copied)
+        // Build a set of recipeIds already approved (copied to my collection)
         const approvedRecipeIds = new Set(
           myRequestsRes.data
             .filter((r) => r.status === "approved")
@@ -39,7 +41,9 @@ const HomePage = () => {
             try {
               const res = await api.get(`/friends/${f.friend._id}/recipes`);
               return res.data.recipes
-                // Hide friend's recipe if you already have an approved copy
+                // Don't show recipes that YOU originally created
+                .filter((r) => r.userId?.toString() !== myUserId?.toString())
+                // Don't show recipes you already have an approved copy of
                 .filter((r) => !approvedRecipeIds.has(r._id.toString()))
                 .map((r) => ({
                   recipe: r,
@@ -101,7 +105,7 @@ const HomePage = () => {
           <Link to="/create" className="btn-outline-red">+ Add Recipe</Link>
         </div>
 
-        {/* Tabs — All, Keepers, Save for Later only */}
+        {/* Tabs */}
         <div className="tabs-row">
           <Link to="/?tab=all" className={`tab-item ${tab === "all" ? "active" : ""}`}>All</Link>
           <Link to="/?tab=keeper" className={`tab-item ${tab === "keeper" ? "active" : ""}`}>Keepers</Link>
@@ -151,6 +155,17 @@ const HomePage = () => {
                           padding: "1px 8px",
                         }}>
                           {friendEmail}
+                        </span>
+                      )}
+                      {isMine && r.copiedFromEmail && (
+                        <span style={{
+                          marginLeft: 6,
+                          background: "#fff3e0", color: "#e67e22",
+                          border: "1px solid #f0c080",
+                          borderRadius: 50, fontSize: 10, fontWeight: 800,
+                          padding: "1px 8px",
+                        }}>
+                          📋 from {r.copiedFromEmail}
                         </span>
                       )}
                     </div>
