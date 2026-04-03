@@ -9,13 +9,24 @@ const FriendRecipeDetailPage = () => {
   const [recipe, setRecipe] = useState(null);
   const [friend, setFriend] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [requestStatus, setRequestStatus] = useState(null); // null | "pending" | "approved" | "denied"
+  const [requesting, setRequesting] = useState(false);
 
   useEffect(() => {
     const fetchRecipe = async () => {
       try {
-        const res = await api.get(`/friends/${friendId}/recipes/${recipeId}`);
-        setFriend(res.data.friend);
-        setRecipe(res.data.recipe);
+        const [recipeRes, myRequestsRes] = await Promise.all([
+          api.get(`/friends/${friendId}/recipes/${recipeId}`),
+          api.get("/share-requests/my"),
+        ]);
+        setFriend(recipeRes.data.friend);
+        setRecipe(recipeRes.data.recipe);
+
+        // Check if already requested this recipe
+        const existing = myRequestsRes.data.find(
+          (r) => r.recipeId === recipeId || r.recipeId?.toString() === recipeId
+        );
+        if (existing) setRequestStatus(existing.status);
       } catch (error) {
         toast.error(error.response?.data?.message || "Failed to load recipe");
       } finally {
@@ -24,6 +35,57 @@ const FriendRecipeDetailPage = () => {
     };
     fetchRecipe();
   }, [friendId, recipeId]);
+
+  const handleRequestCopy = async () => {
+    setRequesting(true);
+    try {
+      await api.post("/share-requests", {
+        recipeId,
+        recipeOwnerId: friendId,
+      });
+      setRequestStatus("pending");
+      toast.success("Copy request sent! The owner will be notified.");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to send request");
+    } finally {
+      setRequesting(false);
+    }
+  };
+
+  const requestButton = () => {
+    if (requestStatus === "approved") return (
+      <div style={{ background: "#e8f9d0", color: "#5aaa10", border: "1.5px solid #7ed321", borderRadius: 50, padding: "10px 20px", fontSize: 13, fontWeight: 800 }}>
+        ✅ Added to your recipes
+      </div>
+    );
+    if (requestStatus === "pending") return (
+      <div style={{ background: "#fffdf0", color: "#8a7a00", border: "1.5px solid #f0e060", borderRadius: 50, padding: "10px 20px", fontSize: 13, fontWeight: 800 }}>
+        ⏳ Request pending...
+      </div>
+    );
+    if (requestStatus === "denied") return (
+      <button onClick={handleRequestCopy} disabled={requesting} style={{
+        background: "transparent", color: "var(--gray)",
+        border: "1.5px solid var(--gray-mid)", borderRadius: 50,
+        padding: "10px 20px", fontSize: 13, fontWeight: 800,
+        fontFamily: "'Nunito', sans-serif", cursor: "pointer",
+      }}>
+        🔄 Request Again
+      </button>
+    );
+    return (
+      <button onClick={handleRequestCopy} disabled={requesting} style={{
+        background: "#7ed321", color: "#fff",
+        border: "none", borderRadius: 50,
+        padding: "10px 24px", fontSize: 13, fontWeight: 800,
+        fontFamily: "'Nunito', sans-serif", cursor: requesting ? "not-allowed" : "pointer",
+        opacity: requesting ? 0.7 : 1,
+        boxShadow: "0 3px 12px rgba(126,211,33,.35)",
+      }}>
+        {requesting ? "Sending..." : "📋 Request Copy"}
+      </button>
+    );
+  };
 
   if (loading) {
     return (
@@ -77,6 +139,9 @@ const FriendRecipeDetailPage = () => {
               </div>
             </div>
           </div>
+
+          {/* Request Copy button */}
+          {requestButton()}
         </div>
 
         <div style={{ height: "1.5px", background: "var(--gray-mid)", marginBottom: 24 }} />

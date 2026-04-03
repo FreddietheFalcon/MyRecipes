@@ -14,6 +14,7 @@ import RegisterPage from "./pages/RegisterPage";
 import FriendsPage from "./pages/FriendsPage";
 import FriendRecipesPage from "./pages/FriendRecipesPage";
 import FriendRecipeDetailPage from "./pages/FriendRecipeDetailPage";
+import CopyRequestsPage from "./pages/CopyRequestsPage";
 
 const PUBLIC_PATHS = ["/login", "/register"];
 
@@ -33,6 +34,7 @@ const AppRoutes = ({ isLoggedIn }) => (
         <Route path="/friends" element={<FriendsPage />} />
         <Route path="/friends/:friendId/recipes" element={<FriendRecipesPage />} />
         <Route path="/friends/:friendId/recipes/:recipeId" element={<FriendRecipeDetailPage />} />
+        <Route path="/copy-requests" element={<CopyRequestsPage />} />
       </>
     ) : (
       <Route path="*" element={<Navigate to="/login" replace />} />
@@ -46,7 +48,6 @@ const App = () => {
   const isPublic = PUBLIC_PATHS.includes(location.pathname);
 
   useEffect(() => {
-    // Skip auth check on public pages — show them immediately
     if (isPublic) {
       setAuthStatus("public");
       return;
@@ -56,7 +57,6 @@ const App = () => {
       .catch(() => setAuthStatus("denied"));
   }, [isPublic]);
 
-  // On public pages render immediately — no auth check needed
   if (isPublic || authStatus === "ok" || authStatus === "denied") {
     return (
       <div className="relative h-full w-full">
@@ -66,7 +66,6 @@ const App = () => {
     );
   }
 
-  // Only show blank while checking auth on protected pages
   return <div style={{ minHeight: "100vh", background: "#f5f5f5" }} />;
 };
 
