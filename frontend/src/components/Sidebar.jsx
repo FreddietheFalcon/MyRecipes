@@ -30,7 +30,7 @@ const Sidebar = () => {
       }
     };
     fetchPending();
-  }, [pathname]);
+  }, []);
 
   const isActive = (to) => {
     if (to === "/") return pathname === "/" && !search.includes("tab=");
