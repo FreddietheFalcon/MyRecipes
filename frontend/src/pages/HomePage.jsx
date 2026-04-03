@@ -26,6 +26,8 @@ const HomePage = () => {
 
         const myUserId = meRes.data.id || meRes.data._id;
         console.log('myUserId:', myUserId);
+        console.log('approvedOriginalIds:', [...approvedOriginalIds]);
+        console.log('myRequests:', myRequestsRes.data);
         setMyRecipes(myRes.data);
 
         // Build a set of original recipeIds already approved (copied to my collection)
