@@ -17,21 +17,35 @@ const HomePage = () => {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const myRes = await api.get("/recipes");
+        const [myRes, friendsRes, myRequestsRes] = await Promise.all([
+          api.get("/recipes"),
+          api.get("/friends"),
+          api.get("/share-requests/my"),
+        ]);
+
         setMyRecipes(myRes.data);
 
-        const friendsRes = await api.get("/friends");
+        // Build a set of recipeIds that have already been approved (copied)
+        const approvedRecipeIds = new Set(
+          myRequestsRes.data
+            .filter((r) => r.status === "approved")
+            .map((r) => r.recipeId?.toString())
+        );
+
         const accepted = friendsRes.data.filter((f) => f.status === "accepted");
 
         const friendData = await Promise.all(
           accepted.map(async (f) => {
             try {
               const res = await api.get(`/friends/${f.friend._id}/recipes`);
-              return res.data.recipes.map((r) => ({
-                recipe: r,
-                friendEmail: f.friend.email,
-                friendId: f.friend._id.toString(),
-              }));
+              return res.data.recipes
+                // Hide friend's recipe if you already have an approved copy
+                .filter((r) => !approvedRecipeIds.has(r._id.toString()))
+                .map((r) => ({
+                  recipe: r,
+                  friendEmail: f.friend.email,
+                  friendId: f.friend._id.toString(),
+                }));
             } catch {
               return [];
             }
