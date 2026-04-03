@@ -25,10 +25,11 @@ const HomePage = () => {
         ]);
 
         const myUserId = meRes.data.id || meRes.data._id;
+        console.log('myUserId:', myUserId);
         setMyRecipes(myRes.data);
 
-        // Build a set of recipeIds already approved (copied to my collection)
-        const approvedRecipeIds = new Set(
+        // Build a set of original recipeIds already approved (copied to my collection)
+        const approvedOriginalIds = new Set(
           myRequestsRes.data
             .filter((r) => r.status === "approved")
             .map((r) => r.recipeId?.toString())
@@ -42,9 +43,14 @@ const HomePage = () => {
               const res = await api.get(`/friends/${f.friend._id}/recipes`);
               return res.data.recipes
                 // Don't show recipes that YOU originally created
-                .filter((r) => r.userId?.toString() !== myUserId?.toString())
-                // Don't show recipes you already have an approved copy of
-                .filter((r) => !approvedRecipeIds.has(r._id.toString()))
+                .filter((r) => {
+                  const recipeOwner = r.userId?.toString();
+                  const me = myUserId?.toString();
+                  console.log('recipe:', r.name, 'owner:', recipeOwner, 'me:', me, 'match:', recipeOwner === me);
+                  return recipeOwner !== me;
+                })
+                // Don't show recipes you already have an approved copy of (match by original _id)
+                .filter((r) => !approvedOriginalIds.has(r._id.toString()))
                 .map((r) => ({
                   recipe: r,
                   friendEmail: f.friend.email,
