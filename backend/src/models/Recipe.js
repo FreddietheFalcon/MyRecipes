@@ -12,15 +12,16 @@ const ingredientSchema = new mongoose.Schema({
 
 const recipeSchema = new mongoose.Schema(
   {
-    // Owner of this recipe
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: false },
-
+    userId:      { type: mongoose.Schema.Types.ObjectId, ref: "User", required: false },
     name:        { type: String, required: true },
     servings:    { type: Number },
     status:      { type: String, enum: ["keeper", "want_to_try"], default: "want_to_try" },
     ingredients: { type: [ingredientSchema], default: [] },
     steps:       { type: [String], default: [] },
     comments:    { type: [commentSchema], default: [] },
+
+    // --- Copy tracking ---
+    copiedFromEmail: { type: String, default: null }, // email of original owner if copied
 
     // --- Soft-delete fields ---
     isDeleted:   { type: Boolean, default: false },
