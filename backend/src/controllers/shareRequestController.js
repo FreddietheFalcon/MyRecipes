@@ -1,6 +1,7 @@
 import ShareRequest from "../models/ShareRequest.js";
 import Recipe from "../models/Recipe.js";
 import Friendship from "../models/Friendship.js";
+import User from "../models/User.js";
 
 // ── POST /api/share-requests ──────────────────────────────────────────────────
 // Viewer requests a copy of a friend's recipe
@@ -93,6 +94,9 @@ export async function approveRequest(req, res) {
     const original = await Recipe.findOne({ _id: request.recipeId, isDeleted: { $ne: true } });
     if (!original) return res.status(404).json({ message: "Original recipe no longer exists" });
 
+    // Get original owner email
+    const originalOwner = await User.findById(request.recipeOwner).select("email");
+
     // Copy the recipe into the requester's collection
     const copy = await Recipe.create({
       userId: request.requester,
@@ -101,7 +105,8 @@ export async function approveRequest(req, res) {
       status: "want_to_try", // default to Save for Later — requester can change it
       ingredients: original.ingredients.map((i) => ({ name: i.name, amount: i.amount })),
       steps: [...original.steps],
-      comments: [], // start fresh — don't copy the owner's comments
+      comments: [], // start fresh
+      copiedFromEmail: originalOwner?.email || null,
     });
 
     // Mark request as approved
@@ -128,6 +133,21 @@ export async function denyRequest(req, res) {
     res.status(200).json({ message: "Request denied", request });
   } catch (error) {
     console.error("Error in denyRequest", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+// ── GET /api/share-requests/incoming-all ─────────────────────────────────────
+// Returns ALL share requests (any status) where current user is the owner
+// Used to hide copies of your own recipes from your friends view
+export async function getAllIncomingRequests(req, res) {
+  try {
+    const requests = await ShareRequest.find({
+      recipeOwner: req.user.id,
+    }).select("recipeId status");
+    res.status(200).json(requests);
+  } catch (error) {
+    console.error("Error in getAllIncomingRequests", error);
     res.status(500).json({ message: "Internal server error" });
   }
 }

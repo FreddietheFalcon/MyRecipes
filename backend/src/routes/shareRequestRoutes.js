@@ -2,6 +2,7 @@ import express from "express";
 import {
   createRequest,
   getIncomingRequests,
+  getAllIncomingRequests,
   getMyRequests,
   approveRequest,
   denyRequest,
@@ -14,6 +15,7 @@ router.use(requireAuth);
 
 router.post("/", createRequest);
 router.get("/incoming", getIncomingRequests);
+router.get("/incoming-all", getAllIncomingRequests);
 router.get("/my", getMyRequests);
 router.put("/:id/approve", approveRequest);
 router.put("/:id/deny", denyRequest);

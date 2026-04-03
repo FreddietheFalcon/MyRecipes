@@ -17,25 +17,29 @@ const HomePage = () => {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [myRes, friendsRes, myRequestsRes, meRes] = await Promise.all([
+        const [myRes, friendsRes, myRequestsRes, meRes, incomingAllRes] = await Promise.all([
           api.get("/recipes"),
           api.get("/friends"),
           api.get("/share-requests/my"),
           api.get("/auth/me"),
+          api.get("/share-requests/incoming-all"),
         ]);
 
         const myUserId = meRes.data.id || meRes.data._id;
         setMyRecipes(myRes.data);
 
-        // Build sets to filter out redundant friend recipes:
-        // 1. Recipes I already requested and got approved (I have my own copy)
+        // Recipes I requested and got approved (I have my own copy)
         const approvedOriginalIds = new Set(
           myRequestsRes.data
             .filter((r) => r.status === "approved")
             .map((r) => r.recipeId?.toString())
         );
-        // 2. My own recipe IDs (don't show copies of my recipes from friends)
-        const myRecipeIds = new Set(myRes.data.map((r) => r._id.toString()));
+        // My recipes that others have copied — hide those copies from my friends view
+        const copiedFromMeIds = new Set(
+          incomingAllRes.data
+            .filter((r) => r.status === "approved")
+            .map((r) => r.recipeId?.toString())
+        );
 
         const accepted = friendsRes.data.filter((f) => f.status === "accepted");
 
@@ -48,8 +52,8 @@ const HomePage = () => {
                 .filter((r) => r.userId?.toString() !== myUserId?.toString())
                 // Don't show recipes you already have an approved copy of
                 .filter((r) => !approvedOriginalIds.has(r._id.toString()))
-                // Don't show a copy of your own recipe that a friend made
-                .filter((r) => !myRecipeIds.has(r._id.toString()) && r.copiedFromEmail !== meRes.data.email)
+                // Don't show copies of your own recipes that friends made
+                .filter((r) => !copiedFromMeIds.has(r._id.toString()))
                 .map((r) => ({
                   recipe: r,
                   friendEmail: f.friend.email,
