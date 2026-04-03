@@ -1,4 +1,4 @@
-import { Route, Routes, Navigate } from "react-router";
+import { Route, Routes, Navigate, useLocation } from "react-router";
 import { useState, useEffect } from "react";
 import api from "./lib/axios";
 
@@ -15,44 +15,59 @@ import FriendsPage from "./pages/FriendsPage";
 import FriendRecipesPage from "./pages/FriendRecipesPage";
 import FriendRecipeDetailPage from "./pages/FriendRecipeDetailPage";
 
+const PUBLIC_PATHS = ["/login", "/register"];
+
+const AppRoutes = ({ isLoggedIn }) => (
+  <Routes>
+    <Route path="/login" element={<LoginPage />} />
+    <Route path="/register" element={<RegisterPage />} />
+    {isLoggedIn ? (
+      <>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/create" element={<CreatePage />} />
+        <Route path="/recipe/:id" element={<RecipeDetailPage />} />
+        <Route path="/inventory" element={<InventoryPage />} />
+        <Route path="/inventory/add" element={<AddIngredientPage />} />
+        <Route path="/inventory/edit/:id" element={<EditIngredientPage />} />
+        <Route path="/trash" element={<TrashPage />} />
+        <Route path="/friends" element={<FriendsPage />} />
+        <Route path="/friends/:friendId/recipes" element={<FriendRecipesPage />} />
+        <Route path="/friends/:friendId/recipes/:recipeId" element={<FriendRecipeDetailPage />} />
+      </>
+    ) : (
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    )}
+  </Routes>
+);
+
 const App = () => {
   const [authStatus, setAuthStatus] = useState("checking");
+  const location = useLocation();
+  const isPublic = PUBLIC_PATHS.includes(location.pathname);
 
   useEffect(() => {
+    // Skip auth check on public pages — show them immediately
+    if (isPublic) {
+      setAuthStatus("public");
+      return;
+    }
     api.get("/auth/me")
       .then(() => setAuthStatus("ok"))
       .catch(() => setAuthStatus("denied"));
-  }, []);
+  }, [isPublic]);
 
-  // Show nothing while checking auth on first load
-  if (authStatus === "checking") return <div style={{ minHeight: "100vh", background: "#f5f5f5" }} />;
+  // On public pages render immediately — no auth check needed
+  if (isPublic || authStatus === "ok" || authStatus === "denied") {
+    return (
+      <div className="relative h-full w-full">
+        <div className="absolute inset-0 -z-10 h-full w-full items-center px-5 py-24 [background:radial-gradient(125%_125%_at_50%_10%,#000_60%,#0000_100%)]" />
+        <AppRoutes isLoggedIn={authStatus === "ok"} />
+      </div>
+    );
+  }
 
-  return (
-    <div className="relative h-full w-full">
-      <div className="absolute inset-0 -z-10 h-full w-full items-center px-5 py-24 [background:radial-gradient(125%_125%_at_50%_10%,#000_60%,#0000_100%)]" />
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-
-        {authStatus === "ok" ? (
-          <>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/create" element={<CreatePage />} />
-            <Route path="/recipe/:id" element={<RecipeDetailPage />} />
-            <Route path="/inventory" element={<InventoryPage />} />
-            <Route path="/inventory/add" element={<AddIngredientPage />} />
-            <Route path="/inventory/edit/:id" element={<EditIngredientPage />} />
-            <Route path="/trash" element={<TrashPage />} />
-            <Route path="/friends" element={<FriendsPage />} />
-            <Route path="/friends/:friendId/recipes" element={<FriendRecipesPage />} />
-            <Route path="/friends/:friendId/recipes/:recipeId" element={<FriendRecipeDetailPage />} />
-          </>
-        ) : (
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        )}
-      </Routes>
-    </div>
-  );
+  // Only show blank while checking auth on protected pages
+  return <div style={{ minHeight: "100vh", background: "#f5f5f5" }} />;
 };
 
 export default App;
