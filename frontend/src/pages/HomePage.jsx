@@ -25,17 +25,17 @@ const HomePage = () => {
         ]);
 
         const myUserId = meRes.data.id || meRes.data._id;
-        console.log('myUserId:', myUserId);
-        console.log('approvedOriginalIds:', [...approvedOriginalIds]);
-        console.log('myRequests:', myRequestsRes.data);
         setMyRecipes(myRes.data);
 
-        // Build a set of original recipeIds already approved (copied to my collection)
+        // Build sets to filter out redundant friend recipes:
+        // 1. Recipes I already requested and got approved (I have my own copy)
         const approvedOriginalIds = new Set(
           myRequestsRes.data
             .filter((r) => r.status === "approved")
             .map((r) => r.recipeId?.toString())
         );
+        // 2. My own recipe IDs (don't show copies of my recipes from friends)
+        const myRecipeIds = new Set(myRes.data.map((r) => r._id.toString()));
 
         const accepted = friendsRes.data.filter((f) => f.status === "accepted");
 
@@ -45,14 +45,11 @@ const HomePage = () => {
               const res = await api.get(`/friends/${f.friend._id}/recipes`);
               return res.data.recipes
                 // Don't show recipes that YOU originally created
-                .filter((r) => {
-                  const recipeOwner = r.userId?.toString();
-                  const me = myUserId?.toString();
-                  console.log('recipe:', r.name, 'owner:', recipeOwner, 'me:', me, 'match:', recipeOwner === me);
-                  return recipeOwner !== me;
-                })
-                // Don't show recipes you already have an approved copy of (match by original _id)
+                .filter((r) => r.userId?.toString() !== myUserId?.toString())
+                // Don't show recipes you already have an approved copy of
                 .filter((r) => !approvedOriginalIds.has(r._id.toString()))
+                // Don't show a copy of your own recipe that a friend made
+                .filter((r) => !myRecipeIds.has(r._id.toString()) && r.copiedFromEmail !== meRes.data.email)
                 .map((r) => ({
                   recipe: r,
                   friendEmail: f.friend.email,
