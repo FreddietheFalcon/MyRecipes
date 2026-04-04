@@ -8,6 +8,11 @@ import toast from "react-hot-toast";
 const HomePage = () => {
   const [myRecipes, setMyRecipes] = useState([]);
   const [friendRecipes, setFriendRecipes] = useState([]);
+  const [hiddenIds, setHiddenIds] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('hiddenViewOnly') || '[]')); }
+    catch { return new Set(); }
+  });
+  const [showHidden, setShowHidden] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isRateLimited, setIsRateLimited] = useState(false);
   const [search, setSearch] = useState("");
@@ -75,12 +80,27 @@ const HomePage = () => {
     fetchAll();
   }, []);
 
+  const hideRecipe = (recipeId) => {
+    const updated = new Set(hiddenIds);
+    updated.add(recipeId);
+    setHiddenIds(updated);
+    localStorage.setItem('hiddenViewOnly', JSON.stringify([...updated]));
+  };
+
+  const unhideAll = () => {
+    setHiddenIds(new Set());
+    localStorage.removeItem('hiddenViewOnly');
+    setShowHidden(false);
+  };
+
   const allItems = [
     ...myRecipes.map((r) => ({ recipe: r, isMine: true })),
     ...friendRecipes.map((f) => ({ recipe: f.recipe, isMine: false, friendEmail: f.friendEmail, friendId: f.friendId })),
   ];
 
   const filtered = allItems.filter(({ recipe, isMine }) => {
+    // Hide dismissed View Only recipes (unless showHidden is on)
+    if (!isMine && hiddenIds.has(recipe._id.toString()) && !showHidden) return false;
     const q = search.toLowerCase().trim();
     const matchTab =
       tab === "all" ? true :
@@ -120,6 +140,25 @@ const HomePage = () => {
           <Link to="/?tab=keeper" className={`tab-item ${tab === "keeper" ? "active" : ""}`}>Keepers</Link>
           <Link to="/?tab=want_to_try" className={`tab-item ${tab === "want_to_try" ? "active" : ""}`}>Save for Later</Link>
         </div>
+
+        {/* Hidden recipes indicator */}
+        {hiddenIds.size > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+            <span style={{ fontSize: 12, color: "var(--gray)", fontWeight: 600 }}>
+              {hiddenIds.size} View Only recipe{hiddenIds.size > 1 ? "s" : ""} hidden
+            </span>
+            <button onClick={() => setShowHidden(!showHidden)}
+              style={{ fontSize: 12, fontWeight: 700, color: "#3b6fd4", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+              {showHidden ? "Hide again" : "Show hidden"}
+            </button>
+            {showHidden && (
+              <button onClick={unhideAll}
+                style={{ fontSize: 12, fontWeight: 700, color: "var(--red)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                Restore all
+              </button>
+            )}
+          </div>
+        )}
 
         {search && (
           <div style={{ fontSize: 13, color: "var(--gray)", fontWeight: 600, marginBottom: 14 }}>
@@ -186,16 +225,27 @@ const HomePage = () => {
                       {r.status === "keeper" ? "⭐ Keeper" : "🕐 Later"}
                     </span>
                   ) : (
-                    <span style={{
-                      background: "#f0f4ff", color: "#3b6fd4",
-                      border: "1.5px solid #a0b8f0",
-                      borderRadius: 50, fontSize: 11, fontWeight: 800,
-                      padding: "3px 12px",
-                    }}>
-                      👁 View Only
-                    </span>
+                    <>
+                      <span style={{
+                        background: "#f0f4ff", color: "#3b6fd4",
+                        border: "1.5px solid #a0b8f0",
+                        borderRadius: 50, fontSize: 11, fontWeight: 800,
+                        padding: "3px 12px",
+                      }}>
+                        👁 View Only
+                      </span>
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); hideRecipe(r._id.toString()); }}
+                        title="Hide this recipe"
+                        style={{
+                          background: "none", border: "none", cursor: "pointer",
+                          color: "var(--gray)", fontSize: 16, padding: "0 2px",
+                          lineHeight: 1, flexShrink: 0,
+                        }}
+                      >✕</button>
+                    </>
                   )}
-                  <span className="pill-arrow">›</span>
+                  {isMine && <span className="pill-arrow">›</span>}
                 </div>
               </Link>
             ))}
