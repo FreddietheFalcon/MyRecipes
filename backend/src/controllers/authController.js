@@ -44,11 +44,16 @@ const cookieOptions = {
 };
 
 // ── POST /api/auth/register ───────────────────────────────────────────────────
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$/;
+
 export async function register(req, res) {
   try {
     const email = req.body.email?.toLowerCase().trim();
     const { password } = req.body;
     if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
+    if (!PASSWORD_REGEX.test(password)) {
+      return res.status(400).json({ message: "Password must be at least 8 characters and include uppercase, lowercase, number, and special character" });
+    }
 
     const existing = await User.findOne({ email });
     if (existing) return res.status(409).json({ message: "Email already registered" });
