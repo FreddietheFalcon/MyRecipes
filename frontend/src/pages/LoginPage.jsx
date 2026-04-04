@@ -21,8 +21,7 @@ const LoginPage = () => {
       setStep("otp");
       toast.success("Check your email for a login code!");
     } catch (error) {
-      const msg = error.response?.data?.message || "Login failed";
-      setErrorMsg(msg);
+      setErrorMsg(error.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -37,20 +36,20 @@ const LoginPage = () => {
       toast.success("Welcome back!");
       navigate("/");
     } catch (error) {
-      const msg = error.response?.data?.message || "Invalid code";
-      setErrorMsg(msg);
+      setErrorMsg(error.response?.data?.message || "Invalid code");
     } finally {
       setLoading(false);
     }
   };
 
-  const inputStyle = {
+  const inputStyle = (hasError) => ({
     width: "100%", padding: "11px 14px",
-    border: "1.5px solid #e4e9ef",
+    border: `1.5px solid ${hasError ? "#e5333a" : "#e4e9ef"}`,
     borderRadius: 10, fontSize: 14,
     fontFamily: "'Nunito', sans-serif",
     outline: "none", boxSizing: "border-box",
-  };
+    background: hasError ? "#fff8f8" : "#fff",
+  });
 
   const labelStyle = {
     fontSize: 12, fontWeight: 800, color: "#2c3e50",
@@ -64,15 +63,29 @@ const LoginPage = () => {
       display: "flex", alignItems: "center", justifyContent: "center",
       fontFamily: "'Nunito', sans-serif",
     }}>
-      <Toaster position="top-center" />
+      <Toaster position="top-center" toastOptions={{ error: { duration: 6000 } }} />
+      <style>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          20% { transform: translateX(-8px); }
+          40% { transform: translateX(8px); }
+          60% { transform: translateX(-6px); }
+          80% { transform: translateX(6px); }
+        }
+        .shake { animation: shake 0.4s ease; }
+      `}</style>
       <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Pacifico&display=swap" rel="stylesheet" />
 
       <div style={{
-        background: "#fff", border: "2.5px solid #7ed321",
+        background: "#fff", border: `2.5px solid ${errorMsg ? "#e5333a" : "#7ed321"}`,
         borderRadius: 22, padding: "48px 40px",
         width: "100%", maxWidth: 420,
-        boxShadow: "0 4px 24px rgba(126,211,33,0.13)",
-      }}>
+        boxShadow: errorMsg ? "0 4px 24px rgba(229,51,58,0.15)" : "0 4px 24px rgba(126,211,33,0.13)",
+        transition: "border-color .3s, box-shadow .3s",
+      }}
+        className={errorMsg ? "shake" : ""}
+        key={errorMsg} // re-triggers animation on new error
+      >
         {/* Brand */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{
@@ -88,30 +101,33 @@ const LoginPage = () => {
           </p>
         </div>
 
-        {/* Inline error banner */}
-        {errorMsg && (
-          <div style={{
-            background: "#fff0f0", border: "1.5px solid #ffdcdd",
-            borderRadius: 10, padding: "10px 14px", marginBottom: 20,
-            fontSize: 13, fontWeight: 700, color: "#e5333a",
-            display: "flex", alignItems: "center", gap: 8,
-          }}>
-            ⚠️ {errorMsg}
-          </div>
-        )}
-
         {step === "login" ? (
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: 16 }}>
               <label style={labelStyle}>Email</label>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
-                placeholder="you@email.com" style={inputStyle} />
+                placeholder="you@email.com" style={inputStyle(!!errorMsg)} />
             </div>
-            <div style={{ marginBottom: 24 }}>
+            <div style={{ marginBottom: 16 }}>
               <label style={labelStyle}>Password</label>
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required
-                placeholder="••••••••" style={inputStyle} />
+                placeholder="••••••••" style={inputStyle(!!errorMsg)} />
             </div>
+
+            {/* Error message — always visible, right above the button */}
+            {errorMsg && (
+              <div style={{
+                background: "#fff0f0", border: "1.5px solid #ffdcdd",
+                borderRadius: 10, padding: "12px 16px", marginBottom: 16,
+                fontSize: 14, fontWeight: 700, color: "#e5333a",
+                display: "flex", alignItems: "center", gap: 8,
+                lineHeight: 1.4,
+              }}>
+                <span style={{ fontSize: 18, flexShrink: 0 }}>⚠️</span>
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
             <button type="submit" disabled={loading} style={{
               width: "100%", padding: "13px", background: "#7ed321", color: "#fff",
               border: "none", borderRadius: 50, fontSize: 15, fontWeight: 800,
@@ -130,13 +146,26 @@ const LoginPage = () => {
             <p style={{ fontSize: 13, color: "#b0b8c1", fontWeight: 600, marginBottom: 20, textAlign: "center" }}>
               Sent to <strong style={{ color: "#2c3e50" }}>{email}</strong>
             </p>
-            <div style={{ marginBottom: 24 }}>
+            <div style={{ marginBottom: 16 }}>
               <label style={labelStyle}>Verification Code</label>
               <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)} required
                 placeholder="000000" maxLength={6}
-                style={{ ...inputStyle, fontSize: 28, fontWeight: 800, letterSpacing: 12, textAlign: "center" }}
+                style={{ ...inputStyle(!!errorMsg), fontSize: 28, fontWeight: 800, letterSpacing: 12, textAlign: "center" }}
               />
             </div>
+
+            {errorMsg && (
+              <div style={{
+                background: "#fff0f0", border: "1.5px solid #ffdcdd",
+                borderRadius: 10, padding: "12px 16px", marginBottom: 16,
+                fontSize: 14, fontWeight: 700, color: "#e5333a",
+                display: "flex", alignItems: "center", gap: 8,
+              }}>
+                <span style={{ fontSize: 18, flexShrink: 0 }}>⚠️</span>
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
             <button type="submit" disabled={loading} style={{
               width: "100%", padding: "13px", background: "#7ed321", color: "#fff",
               border: "none", borderRadius: 50, fontSize: 15, fontWeight: 800,
