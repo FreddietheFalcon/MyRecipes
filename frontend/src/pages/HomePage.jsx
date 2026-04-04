@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 const HomePage = () => {
   const [myRecipes, setMyRecipes] = useState([]);
   const [friendRecipes, setFriendRecipes] = useState([]);
+  const [pendingIds, setPendingIds] = useState(new Set());
   const [hiddenIds, setHiddenIds] = useState(() => {
     try { return new Set(JSON.parse(localStorage.getItem('hiddenViewOnly') || '[]')); }
     catch { return new Set(); }
@@ -39,6 +40,13 @@ const HomePage = () => {
             .filter((r) => r.status === "approved")
             .map((r) => r.recipeId?.toString())
         );
+        // Build a set of recipeIds with pending requests
+        const pendingRequestIds = new Set(
+          myRequestsRes.data
+            .filter((r) => r.status === "pending")
+            .map((r) => r.recipeId?.toString())
+        );
+        setPendingIds(pendingRequestIds);
         // My recipes that others have copied — hide those copies from my friends view
         const copiedFromMeIds = new Set(
           incomingAllRes.data
@@ -227,12 +235,13 @@ const HomePage = () => {
                   ) : (
                     <>
                       <span style={{
-                        background: "#f0f4ff", color: "#3b6fd4",
-                        border: "1.5px solid #a0b8f0",
+                        background: pendingIds.has(r._id.toString()) ? "#fffdf0" : "#f0f4ff",
+                        color: pendingIds.has(r._id.toString()) ? "#8a7a00" : "#3b6fd4",
+                        border: `1.5px solid ${pendingIds.has(r._id.toString()) ? "#f0e060" : "#a0b8f0"}`,
                         borderRadius: 50, fontSize: 11, fontWeight: 800,
                         padding: "3px 12px",
                       }}>
-                        👁 View Only
+                        {pendingIds.has(r._id.toString()) ? "⏳ Pending" : "👁 View Only"}
                       </span>
                       <button
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); hideRecipe(r._id.toString()); }}
