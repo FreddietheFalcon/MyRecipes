@@ -169,17 +169,19 @@ const RecipeDetailPage = () => {
 
         {/* Meta chips */}
         <div style={{ display: "flex", gap: 10, marginBottom: 28, flexWrap: "wrap", alignItems: "center" }}>
-          <div className="input-wrap" style={{ width: 180 }}>
-            <span style={{ color: "var(--gray)" }}>👥</span>
-            <input
-              type="number"
-              min="1"
-              value={recipe.servings || ""}
-              onChange={(e) => setRecipe({ ...recipe, servings: e.target.value ? Number(e.target.value) : "" })}
-              placeholder="Servings"
-              style={{ fontFamily: "'Nunito', sans-serif" }}
-            />
-            <span style={{ color: "var(--gray)", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>servings</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ fontSize: 11, fontWeight: 800, color: "var(--gray)", textTransform: "uppercase", letterSpacing: ".05em" }}>Servings</label>
+            <div className="input-wrap" style={{ width: 140 }}>
+              <span style={{ color: "var(--gray)" }}>👥</span>
+              <input
+                type="number"
+                min="1"
+                value={recipe.servings || ""}
+                onChange={(e) => setRecipe({ ...recipe, servings: e.target.value ? Number(e.target.value) : "" })}
+                placeholder="e.g. 4"
+                style={{ fontFamily: "'Nunito', sans-serif" }}
+              />
+            </div>
           </div>
           {recipe.ingredients?.length > 0 && <div className="meta-chip">🥘 {recipe.ingredients.length} ingredients</div>}
           {recipe.steps?.length > 0 && <div className="meta-chip">📋 {recipe.steps.length} steps</div>}
