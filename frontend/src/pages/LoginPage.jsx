@@ -104,12 +104,12 @@ const LoginPage = () => {
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: 16 }}>
               <label style={labelStyle}>Email</label>
-              <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setErrorMsg(""); }} required
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
                 placeholder="you@email.com" style={inputStyle} />
             </div>
             <div style={{ marginBottom: 24 }}>
               <label style={labelStyle}>Password</label>
-              <input type="password" value={password} onChange={(e) => { setPassword(e.target.value); setErrorMsg(""); }} required
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required
                 placeholder="••••••••" style={inputStyle} />
             </div>
             <button type="submit" disabled={loading} style={{
@@ -132,7 +132,7 @@ const LoginPage = () => {
             </p>
             <div style={{ marginBottom: 24 }}>
               <label style={labelStyle}>Verification Code</label>
-              <input type="text" value={otp} onChange={(e) => { setOtp(e.target.value); setErrorMsg(""); }} required
+              <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)} required
                 placeholder="000000" maxLength={6}
                 style={{ ...inputStyle, fontSize: 28, fontWeight: 800, letterSpacing: 12, textAlign: "center" }}
               />
