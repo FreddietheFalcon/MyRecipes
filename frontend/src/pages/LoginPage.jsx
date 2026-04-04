@@ -23,7 +23,6 @@ const LoginPage = () => {
     } catch (error) {
       const msg = error.response?.data?.message || "Login failed";
       setErrorMsg(msg);
-      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -40,7 +39,6 @@ const LoginPage = () => {
     } catch (error) {
       const msg = error.response?.data?.message || "Invalid code";
       setErrorMsg(msg);
-      toast.error(msg);
     } finally {
       setLoading(false);
     }
