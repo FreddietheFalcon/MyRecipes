@@ -40,9 +40,8 @@ const LoginPage = () => {
     setLoading(true);
     try {
       await api.post("/auth/verify-otp", { email, otp });
-      setErrorMsg("");
-      toast.success("Welcome back!");
-      navigate("/");
+      // Use full page reload so App.jsx re-checks auth status from scratch
+      window.location.href = "/";
     } catch (error) {
       setErrorMsg(error.response?.data?.message || "Invalid or expired code");
     } finally {

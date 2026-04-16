@@ -58,8 +58,8 @@ const RegisterPage = () => {
     setLoading(true);
     try {
       await api.post("/auth/verify-otp", { email, otp });
-      toast.success("Email verified! Welcome to My Recipes 🍳");
-      navigate("/");
+      // Use full page reload so App.jsx re-checks auth from scratch
+      window.location.href = "/";
     } catch (error) {
       const msg = error.response?.data?.message || "Invalid code";
       setErrorMsg(msg);
