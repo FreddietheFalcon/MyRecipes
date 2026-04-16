@@ -154,6 +154,9 @@ const LoginPage = () => {
               Don't have an account?{" "}
               <Link to="/register" style={{ color: "#5aaa10", fontWeight: 800, textDecoration: "none" }}>Register</Link>
             </p>
+            <p style={{ textAlign: "center", marginTop: 8, fontSize: 13, color: "#b0b8c1", fontWeight: 600 }}>
+              <Link to="/forgot-password" style={{ color: "#b0b8c1", fontWeight: 700, textDecoration: "none" }}>Forgot password?</Link>
+            </p>
           </form>
         ) : (
           <form onSubmit={handleVerify}>

@@ -139,3 +139,71 @@ export async function logout(req, res) {
 export async function getMe(req, res) {
   res.status(200).json({ id: req.user.id, email: req.user.email });
 }
+
+// ── POST /api/auth/forgot-password ───────────────────────────────────────────
+// User requests a password reset — sends OTP to their email
+export async function forgotPassword(req, res) {
+  try {
+    const email = req.body.email?.toLowerCase().trim();
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    const user = await User.findOne({ email });
+    // Don't reveal whether email exists or not — always return 200
+    if (user) {
+      const otp = generateOTP();
+      await redis.set(`reset:${email}`, otp, { ex: 600 });
+      await resend.emails.send({
+        from: "My Recipes <noreply@kaebauder.com>",
+        to: email,
+        subject: "Reset your My Recipes password",
+        html: `
+          <div style="font-family:sans-serif;max-width:420px;margin:auto">
+            <h2 style="color:#5aaa10">My Recipes 🍳</h2>
+            <p>You requested a password reset. Your code is:</p>
+            <div style="font-size:40px;font-weight:800;letter-spacing:10px;color:#2c3e50;margin:24px 0">${otp}</div>
+            <p style="color:#b0b8c1;font-size:13px">This code expires in 10 minutes. If you didn't request this, ignore this email.</p>
+          </div>
+        `,
+      });
+    }
+
+    res.status(200).json({ message: "If that email is registered, a reset code has been sent." });
+  } catch (error) {
+    console.error("Error in forgotPassword controller", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+// ── POST /api/auth/reset-password ─────────────────────────────────────────────
+// User submits OTP + new password to reset
+export async function resetPassword(req, res) {
+  try {
+    const email = req.body.email?.toLowerCase().trim();
+    const { otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: "Email, code, and new password are required" });
+    }
+
+    if (!PASSWORD_REGEX.test(newPassword)) {
+      return res.status(400).json({ message: "Password must be at least 8 characters and include uppercase, lowercase, number, and special character" });
+    }
+
+    const stored = await redis.get(`reset:${email}`);
+    if (!stored || String(stored) !== String(otp)) {
+      return res.status(401).json({ message: "Invalid or expired code" });
+    }
+
+    await redis.del(`reset:${email}`);
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.passwordHash = await bcrypt.hash(newPassword, 12);
+    await user.save();
+
+    res.status(200).json({ message: "Password reset successfully. You can now log in." });
+  } catch (error) {
+    console.error("Error in resetPassword controller", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}

@@ -126,13 +126,13 @@ const RegisterPage = () => {
           <form onSubmit={handleRegister}>
             <div style={{ marginBottom: 16 }}>
               <label style={labelStyle}>Email</label>
-              <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setErrorMsg(""); }} required
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
                 placeholder="you@email.com" style={inputStyle} />
             </div>
             <div style={{ marginBottom: 16 }}>
               <label style={labelStyle}>Password</label>
               <input type="password" value={password}
-                onChange={(e) => { setPassword(e.target.value); setErrorMsg(""); setShowRules(true); }}
+                onChange={(e) => { setPassword(e.target.value); setShowRules(true); }}
                 onFocus={() => setShowRules(true)}
                 required placeholder="Create a strong password" style={inputStyle} />
 
@@ -154,7 +154,7 @@ const RegisterPage = () => {
             <div style={{ marginBottom: 24 }}>
               <label style={labelStyle}>Confirm Password</label>
               <input type="password" value={confirm}
-                onChange={(e) => { setConfirm(e.target.value); setErrorMsg(""); }}
+                onChange={(e) => setConfirm(e.target.value)}
                 required placeholder="••••••••" style={{
                   ...inputStyle,
                   borderColor: confirm && confirm !== password ? "#e5333a" : "#e4e9ef",
@@ -183,7 +183,7 @@ const RegisterPage = () => {
             </p>
             <div style={{ marginBottom: 24 }}>
               <label style={labelStyle}>Verification Code</label>
-              <input type="text" value={otp} onChange={(e) => { setOtp(e.target.value); setErrorMsg(""); }} required
+              <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)} required
                 placeholder="000000" maxLength={6}
                 style={{ ...inputStyle, fontSize: 28, fontWeight: 800, letterSpacing: 12, textAlign: "center" }}
               />

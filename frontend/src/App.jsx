@@ -1,5 +1,5 @@
 import { Route, Routes, Navigate, useLocation } from "react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import api from "./lib/axios";
 
 import HomePage from "./pages/HomePage";
@@ -15,13 +15,15 @@ import FriendsPage from "./pages/FriendsPage";
 import FriendRecipesPage from "./pages/FriendRecipesPage";
 import FriendRecipeDetailPage from "./pages/FriendRecipeDetailPage";
 import CopyRequestsPage from "./pages/CopyRequestsPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 
-const PUBLIC_PATHS = ["/login", "/register"];
+const PUBLIC_PATHS = ["/login", "/register", "/forgot-password"];
 
 const AppRoutes = ({ isLoggedIn }) => (
   <Routes>
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<RegisterPage />} />
+    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
     {isLoggedIn ? (
       <>
         <Route path="/" element={<HomePage />} />
@@ -45,17 +47,23 @@ const AppRoutes = ({ isLoggedIn }) => (
 const App = () => {
   const [authStatus, setAuthStatus] = useState("checking");
   const location = useLocation();
+  const checkedRef = useRef(false);
   const isPublic = PUBLIC_PATHS.includes(location.pathname);
 
   useEffect(() => {
+    // Only run the auth check once on initial load
+    if (checkedRef.current) return;
+    checkedRef.current = true;
+
     if (isPublic) {
       setAuthStatus("public");
       return;
     }
+
     api.get("/auth/me")
       .then(() => setAuthStatus("ok"))
       .catch(() => setAuthStatus("denied"));
-  }, [isPublic]);
+  }, []); // empty deps — runs only once
 
   if (isPublic || authStatus === "ok" || authStatus === "denied") {
     return (
