@@ -6,6 +6,7 @@ import {
   getMyRequests,
   approveRequest,
   denyRequest,
+  migratecopiedFromEmail,
 } from "../controllers/shareRequestController.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
 
@@ -19,5 +20,6 @@ router.get("/incoming-all", getAllIncomingRequests);
 router.get("/my", getMyRequests);
 router.put("/:id/approve", approveRequest);
 router.put("/:id/deny", denyRequest);
+router.post("/migrate", migratecopiedFromEmail);
 
 export default router;

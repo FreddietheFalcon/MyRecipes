@@ -151,3 +151,37 @@ export async function getAllIncomingRequests(req, res) {
     res.status(500).json({ message: "Internal server error" });
   }
 }
+
+// ── POST /api/share-requests/migrate ─────────────────────────────────────────
+// One-time migration: sets copiedFromEmail on all existing approved copies
+// that are missing it. Safe to run multiple times.
+export async function migratecopiedFromEmail(req, res) {
+  try {
+    const approved = await ShareRequest.find({ status: "approved" })
+      .populate("recipeOwner", "email");
+
+    let updated = 0;
+    for (const sr of approved) {
+      const ownerEmail = sr.recipeOwner?.email;
+      if (!ownerEmail) continue;
+
+      // Find the copy — owned by requester, same name, missing copiedFromEmail
+      const copy = await Recipe.findOne({
+        userId: sr.requester,
+        name: sr.recipeName,
+        $or: [{ copiedFromEmail: null }, { copiedFromEmail: { $exists: false } }],
+      });
+
+      if (copy) {
+        copy.copiedFromEmail = ownerEmail;
+        await copy.save();
+        updated++;
+      }
+    }
+
+    res.status(200).json({ message: `Migration complete. Updated ${updated} recipes.` });
+  } catch (error) {
+    console.error("Error in migration", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
