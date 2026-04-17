@@ -162,49 +162,43 @@ export async function getAllIncomingRequests(req, res) {
 }
 
 // ── POST /api/share-requests/migrate ─────────────────────────────────────────
+// Fixes ALL copies missing originalRecipeId by tracing back through share requests
 export async function migratecopiedFromEmail(req, res) {
   try {
+    // Find all approved share requests — each has the true originalRecipeId
     const approved = await ShareRequest.find({ status: "approved" })
-      .populate("recipeOwner", "email")
-      .populate("requester", "email");
+      .populate("recipeOwner", "email");
+
+    // Build a map: recipeName -> { originalRecipeId, ownerEmail }
+    const recipeMap = {};
+    for (const sr of approved) {
+      if (!recipeMap[sr.recipeName]) {
+        recipeMap[sr.recipeName] = {
+          originalRecipeId: sr.recipeId,
+          ownerEmail: sr.recipeOwner?.email,
+        };
+      }
+    }
+
+    // Find ALL recipes that are copies (have copiedFromEmail) but missing originalRecipeId
+    const copiesToFix = await Recipe.find({
+      copiedFromEmail: { $exists: true, $ne: null },
+      $or: [
+        { originalRecipeId: null },
+        { originalRecipeId: { $exists: false } },
+      ],
+    });
 
     let updated = 0;
     const results = [];
 
-    for (const sr of approved) {
-      const ownerEmail = sr.recipeOwner?.email;
-      const requesterEmail = sr.requester?.email;
-      if (!ownerEmail) continue;
-
-      // The original recipe ID is the recipeId in the share request
-      const originalRecipeId = sr.recipeId;
-
-      // Find ALL copies owned by requester with this recipe name
-      const copies = await Recipe.find({
-        userId: sr.requester._id,
-        name: sr.recipeName,
-      });
-
-      for (const copy of copies) {
-        let needsSave = false;
-
-        // Fix copiedFromEmail if missing or wrong
-        if (!copy.copiedFromEmail || copy.copiedFromEmail === requesterEmail) {
-          copy.copiedFromEmail = ownerEmail;
-          needsSave = true;
-        }
-
-        // Fix originalRecipeId if missing
-        if (!copy.originalRecipeId) {
-          copy.originalRecipeId = originalRecipeId;
-          needsSave = true;
-        }
-
-        if (needsSave) {
-          await copy.save();
-          updated++;
-          results.push({ recipe: copy.name, copiedFromEmail: ownerEmail, originalRecipeId });
-        }
+    for (const copy of copiesToFix) {
+      const mapEntry = recipeMap[copy.name];
+      if (mapEntry) {
+        copy.originalRecipeId = mapEntry.originalRecipeId;
+        await copy.save();
+        updated++;
+        results.push({ recipe: copy.name, originalRecipeId: mapEntry.originalRecipeId });
       }
     }
 
