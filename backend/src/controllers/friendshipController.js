@@ -117,20 +117,22 @@ export async function getFriendRecipes(req, res) {
       return res.status(403).json({ message: "You are not friends with this user" });
     }
 
-    // Get all recipe names the current user already owns (including copies)
+    // Get all recipes the current user owns
     const myOwnRecipes = await Recipe.find({
       userId: req.user.id,
       isDeleted: { $ne: true },
     }).select("name originalRecipeId _id").lean();
 
-    // Set of names user already owns
-    const myOwnNames = new Set(myOwnRecipes.map((r) => r.name.toLowerCase().trim()));
-    // Set of original recipe IDs the user already has a copy of
+    // Set of MY OWN recipe _ids (I am the original creator)
+    const myOwnRecipeIds = new Set(myOwnRecipes.map((r) => r._id.toString()));
+
+    // Set of original recipe IDs I already have a copy of
     const myOriginalIds = new Set(
       myOwnRecipes
         .filter((r) => r.originalRecipeId)
         .map((r) => r.originalRecipeId.toString())
     );
+
     // Also include approved share request recipeIds
     const approvedRequests = await ShareRequest.find({
       requester: req.user.id,
@@ -143,14 +145,18 @@ export async function getFriendRecipes(req, res) {
       isDeleted: { $ne: true },
     }).sort({ createdAt: -1 }).lean();
 
-    // Filter out recipes the user already has a copy of at any chain depth
+    // Filter out recipes the user already has or created at any chain depth
     const recipes = allRecipes.filter((r) => {
       const rid = r._id.toString();
       const origId = (r.originalRecipeId || r._id).toString();
+      // This is one of MY original recipes (I created it)
+      if (myOwnRecipeIds.has(rid)) return false;
       // Already copied this exact recipe
       if (myOriginalIds.has(rid)) return false;
       // Already have a copy that traces back to the same original
       if (myOriginalIds.has(origId)) return false;
+      // This friend's recipe traces back to one of MY original recipes
+      if (myOwnRecipeIds.has(origId)) return false;
       return true;
     });
 
