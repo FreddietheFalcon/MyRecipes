@@ -170,10 +170,14 @@ export async function migratecopiedFromEmail(req, res) {
 
     let updated = 0;
     const results = [];
+
     for (const sr of approved) {
       const ownerEmail = sr.recipeOwner?.email;
       const requesterEmail = sr.requester?.email;
       if (!ownerEmail) continue;
+
+      // The original recipe ID is the recipeId in the share request
+      const originalRecipeId = sr.recipeId;
 
       // Find ALL copies owned by requester with this recipe name
       const copies = await Recipe.find({
@@ -182,12 +186,24 @@ export async function migratecopiedFromEmail(req, res) {
       });
 
       for (const copy of copies) {
-        // Fix if missing or incorrectly set to requester's email
+        let needsSave = false;
+
+        // Fix copiedFromEmail if missing or wrong
         if (!copy.copiedFromEmail || copy.copiedFromEmail === requesterEmail) {
           copy.copiedFromEmail = ownerEmail;
+          needsSave = true;
+        }
+
+        // Fix originalRecipeId if missing
+        if (!copy.originalRecipeId) {
+          copy.originalRecipeId = originalRecipeId;
+          needsSave = true;
+        }
+
+        if (needsSave) {
           await copy.save();
           updated++;
-          results.push({ recipe: copy.name, fixedTo: ownerEmail });
+          results.push({ recipe: copy.name, copiedFromEmail: ownerEmail, originalRecipeId });
         }
       }
     }
