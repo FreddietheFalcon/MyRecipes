@@ -60,7 +60,12 @@ const HomePage = () => {
           accepted.map(async (f) => {
             try {
               const res = await api.get(`/friends/${f.friend._id}/recipes`);
-              return res.data.recipes
+              const recipes = res.data.recipes;
+              console.log("Friend recipes:", recipes.map(r => ({id: r._id, name: r.name})));
+              console.log("approvedOriginalIds:", [...approvedOriginalIds]);
+              console.log("myUserId:", myUserId);
+              console.log("meEmail:", meRes.data.email);
+              return recipes
                 // Don't show recipes that YOU originally created
                 .filter((r) => r.userId?.toString() !== myUserId?.toString())
                 // Don't show recipes you already have an approved copy of
