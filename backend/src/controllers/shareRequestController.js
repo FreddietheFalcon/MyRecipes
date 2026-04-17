@@ -94,19 +94,28 @@ export async function approveRequest(req, res) {
     const original = await Recipe.findOne({ _id: request.recipeId, isDeleted: { $ne: true } });
     if (!original) return res.status(404).json({ message: "Original recipe no longer exists" });
 
-    // Get original owner email
-    const originalOwner = await User.findById(request.recipeOwner).select("email");
+    // Get original owner email — the person who OWNS the recipe (not the requester)
+    // recipeOwner is the user who received the request and is now approving it
+    // which is req.user — so use req.user.email directly for reliability
+    const originalOwnerUser = await User.findById(request.recipeOwner).select("email");
+    const copiedFromEmail = originalOwnerUser?.email || null;
+    console.log("approveRequest — recipeOwner:", request.recipeOwner, "email:", copiedFromEmail, "requester:", request.requester);
+
+    // The originalRecipeId always points to the root recipe —
+    // if the recipe being copied is itself a copy, use its originalRecipeId
+    const originalRecipeId = original.originalRecipeId || original._id;
 
     // Copy the recipe into the requester's collection
     const copy = await Recipe.create({
       userId: request.requester,
       name: original.name,
       servings: original.servings,
-      status: "want_to_try", // default to Save for Later — requester can change it
+      status: "want_to_try",
       ingredients: original.ingredients.map((i) => ({ name: i.name, amount: i.amount })),
       steps: [...original.steps],
-      comments: [], // start fresh
-      copiedFromEmail: originalOwner?.email || null,
+      comments: [],
+      copiedFromEmail,
+      originalRecipeId,
     });
 
     // Mark request as approved
@@ -153,33 +162,37 @@ export async function getAllIncomingRequests(req, res) {
 }
 
 // ── POST /api/share-requests/migrate ─────────────────────────────────────────
-// One-time migration: sets copiedFromEmail on all existing approved copies
-// that are missing it. Safe to run multiple times.
 export async function migratecopiedFromEmail(req, res) {
   try {
     const approved = await ShareRequest.find({ status: "approved" })
-      .populate("recipeOwner", "email");
+      .populate("recipeOwner", "email")
+      .populate("requester", "email");
 
     let updated = 0;
+    const results = [];
     for (const sr of approved) {
       const ownerEmail = sr.recipeOwner?.email;
+      const requesterEmail = sr.requester?.email;
       if (!ownerEmail) continue;
 
-      // Find the copy — owned by requester, same name, missing copiedFromEmail
-      const copy = await Recipe.findOne({
-        userId: sr.requester,
+      // Find ALL copies owned by requester with this recipe name
+      const copies = await Recipe.find({
+        userId: sr.requester._id,
         name: sr.recipeName,
-        $or: [{ copiedFromEmail: null }, { copiedFromEmail: { $exists: false } }],
       });
 
-      if (copy) {
-        copy.copiedFromEmail = ownerEmail;
-        await copy.save();
-        updated++;
+      for (const copy of copies) {
+        // Fix if missing or incorrectly set to requester's email
+        if (!copy.copiedFromEmail || copy.copiedFromEmail === requesterEmail) {
+          copy.copiedFromEmail = ownerEmail;
+          await copy.save();
+          updated++;
+          results.push({ recipe: copy.name, fixedTo: ownerEmail });
+        }
       }
     }
 
-    res.status(200).json({ message: `Migration complete. Updated ${updated} recipes.` });
+    res.status(200).json({ message: `Migration complete. Updated ${updated} recipes.`, results });
   } catch (error) {
     console.error("Error in migration", error);
     res.status(500).json({ message: "Internal server error" });

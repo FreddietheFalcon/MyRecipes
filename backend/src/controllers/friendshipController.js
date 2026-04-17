@@ -117,22 +117,42 @@ export async function getFriendRecipes(req, res) {
       return res.status(403).json({ message: "You are not friends with this user" });
     }
 
-    // Find recipe IDs that the current user has already copied
+    // Get all recipe names the current user already owns (including copies)
+    const myOwnRecipes = await Recipe.find({
+      userId: req.user.id,
+      isDeleted: { $ne: true },
+    }).select("name originalRecipeId _id").lean();
+
+    // Set of names user already owns
+    const myOwnNames = new Set(myOwnRecipes.map((r) => r.name.toLowerCase().trim()));
+    // Set of original recipe IDs the user already has a copy of
+    const myOriginalIds = new Set(
+      myOwnRecipes
+        .filter((r) => r.originalRecipeId)
+        .map((r) => r.originalRecipeId.toString())
+    );
+    // Also include approved share request recipeIds
     const approvedRequests = await ShareRequest.find({
       requester: req.user.id,
-      recipeOwner: friendId,
       status: "approved",
     }).select("recipeId");
-
-    const alreadyCopiedIds = new Set(approvedRequests.map((r) => r.recipeId.toString()));
+    approvedRequests.forEach((r) => myOriginalIds.add(r.recipeId.toString()));
 
     const allRecipes = await Recipe.find({
       userId: friendId,
       isDeleted: { $ne: true },
     }).sort({ createdAt: -1 }).lean();
 
-    // Filter out recipes the current user has already copied
-    const recipes = allRecipes.filter((r) => !alreadyCopiedIds.has(r._id.toString()));
+    // Filter out recipes the user already has a copy of at any chain depth
+    const recipes = allRecipes.filter((r) => {
+      const rid = r._id.toString();
+      const origId = (r.originalRecipeId || r._id).toString();
+      // Already copied this exact recipe
+      if (myOriginalIds.has(rid)) return false;
+      // Already have a copy that traces back to the same original
+      if (myOriginalIds.has(origId)) return false;
+      return true;
+    });
 
     const friend = await User.findById(friendId).select("email").lean();
 

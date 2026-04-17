@@ -21,7 +21,8 @@ const recipeSchema = new mongoose.Schema(
     comments:    { type: [commentSchema], default: [] },
 
     // --- Copy tracking ---
-    copiedFromEmail: { type: String, default: null }, // email of original owner if copied
+    copiedFromEmail:   { type: String, default: null }, // email of original owner if copied
+    originalRecipeId: { type: mongoose.Schema.Types.ObjectId, default: null }, // points to the root original recipe
 
     // --- Soft-delete fields ---
     isDeleted:   { type: Boolean, default: false },
