@@ -152,11 +152,11 @@ export async function getFriendRecipeById(req, res) {
       _id: recipeId,
       userId: friendId,
       isDeleted: { $ne: true },
-    });
+    }).lean();
 
     if (!recipe) return res.status(404).json({ message: "Recipe not found" });
 
-    const friend = await User.findById(friendId).select("email");
+    const friend = await User.findById(friendId).select("email").lean();
 
     res.status(200).json({ friend, recipe });
   } catch (error) {
