@@ -119,10 +119,9 @@ export async function getFriendRecipes(req, res) {
     const recipes = await Recipe.find({
       userId: friendId,
       isDeleted: { $ne: true },
-    }).sort({ createdAt: -1 });
+    }).sort({ createdAt: -1 }).lean();
 
-
-    const friend = await User.findById(friendId).select("email");
+    const friend = await User.findById(friendId).select("email").lean();
 
     res.status(200).json({ friend, recipes });
   } catch (error) {
