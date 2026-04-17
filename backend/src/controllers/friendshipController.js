@@ -1,6 +1,7 @@
 import Friendship from "../models/Friendship.js";
 import User from "../models/User.js";
 import Recipe from "../models/Recipe.js";
+import ShareRequest from "../models/ShareRequest.js";
 
 // ── POST /api/friends/request ─────────────────────────────────────────────────
 export async function sendRequest(req, res) {
@@ -116,10 +117,22 @@ export async function getFriendRecipes(req, res) {
       return res.status(403).json({ message: "You are not friends with this user" });
     }
 
-    const recipes = await Recipe.find({
+    // Find recipe IDs that the current user has already copied
+    const approvedRequests = await ShareRequest.find({
+      requester: req.user.id,
+      recipeOwner: friendId,
+      status: "approved",
+    }).select("recipeId");
+
+    const alreadyCopiedIds = new Set(approvedRequests.map((r) => r.recipeId.toString()));
+
+    const allRecipes = await Recipe.find({
       userId: friendId,
       isDeleted: { $ne: true },
     }).sort({ createdAt: -1 }).lean();
+
+    // Filter out recipes the current user has already copied
+    const recipes = allRecipes.filter((r) => !alreadyCopiedIds.has(r._id.toString()));
 
     const friend = await User.findById(friendId).select("email").lean();
 
