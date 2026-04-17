@@ -60,16 +60,11 @@ const HomePage = () => {
           accepted.map(async (f) => {
             try {
               const res = await api.get(`/friends/${f.friend._id}/recipes`);
-              const recipes = res.data.recipes;
-              console.log("Friend recipes:", recipes.map(r => ({id: r._id, name: r.name})));
-              console.log("approvedOriginalIds:", [...approvedOriginalIds]);
-              console.log("myUserId:", myUserId);
-              console.log("meEmail:", meRes.data.email);
-              return recipes
+              return res.data.recipes
                 // Don't show recipes that YOU originally created
-                .filter((r) => r.userId?.toString() !== myUserId?.toString())
+                .filter((r) => (r.userId?._id || r.userId)?.toString() !== myUserId?.toString())
                 // Don't show recipes you already have an approved copy of
-                .filter((r) => !approvedOriginalIds.has(r._id.toString()))
+                .filter((r) => !approvedOriginalIds.has((r._id || r.id)?.toString()))
                 // Don't show copies of your own recipes (identified by copiedFromEmail)
                 .filter((r) => r.copiedFromEmail !== meRes.data.email)
                 .map((r) => ({
@@ -113,7 +108,7 @@ const HomePage = () => {
 
   const filtered = allItems.filter(({ recipe, isMine }) => {
     // Hide dismissed View Only recipes (unless showHidden is on)
-    if (!isMine && hiddenIds.has(recipe._id.toString()) && !showHidden) return false;
+    if (!isMine && hiddenIds.has((recipe._id || recipe.id).toString()) && !showHidden) return false;
     const q = search.toLowerCase().trim();
     const matchTab =
       tab === "all" ? true :
@@ -195,7 +190,7 @@ const HomePage = () => {
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {filtered.map(({ recipe: r, isMine, friendEmail, friendId }, i) => (
               <Link
-                key={`${isMine ? "mine" : friendId}-${r._id}`}
+                key={`${isMine ? "mine" : friendId}-${r._id || r.id}`}
                 to={isMine ? `/recipe/${r._id}` : `/friends/${friendId}/recipes/${r._id}`}
                 className="recipe-pill"
                 style={{ animationDelay: `${i * 0.05}s` }}
@@ -240,16 +235,16 @@ const HomePage = () => {
                   ) : (
                     <>
                       <span style={{
-                        background: pendingIds.has(r._id.toString()) ? "#fffdf0" : "#f0f4ff",
-                        color: pendingIds.has(r._id.toString()) ? "#8a7a00" : "#3b6fd4",
-                        border: `1.5px solid ${pendingIds.has(r._id.toString()) ? "#f0e060" : "#a0b8f0"}`,
+                        background: pendingIds.has((r._id || r.id).toString()) ? "#fffdf0" : "#f0f4ff",
+                        color: pendingIds.has((r._id || r.id).toString()) ? "#8a7a00" : "#3b6fd4",
+                        border: `1.5px solid ${pendingIds.has((r._id || r.id).toString()) ? "#f0e060" : "#a0b8f0"}`,
                         borderRadius: 50, fontSize: 11, fontWeight: 800,
                         padding: "3px 12px",
                       }}>
-                        {pendingIds.has(r._id.toString()) ? "⏳ Pending" : "👁 View Only"}
+                        {pendingIds.has((r._id || r.id).toString()) ? "⏳ Pending" : "👁 View Only"}
                       </span>
                       <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); hideRecipe(r._id.toString()); }}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); hideRecipe((r._id || r.id).toString()); }}
                         title="Hide this recipe"
                         style={{
                           background: "none", border: "none", cursor: "pointer",
