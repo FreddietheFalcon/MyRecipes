@@ -44,9 +44,7 @@ const RegisterPage = () => {
       setStep("otp");
       toast.success("Account created! Check your email for a verification code.");
     } catch (error) {
-      const msg = error.response?.data?.message || "Registration failed";
-      setErrorMsg(msg);
-      toast.error(msg);
+      setErrorMsg(error.response?.data?.message || "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -58,12 +56,10 @@ const RegisterPage = () => {
     setLoading(true);
     try {
       await api.post("/auth/verify-otp", { email, otp });
-      // Use full page reload so App.jsx re-checks auth from scratch
-      window.location.href = "/";
+      toast.success("Email verified! Welcome to My Recipes 🍳");
+      navigate("/");
     } catch (error) {
-      const msg = error.response?.data?.message || "Invalid code";
-      setErrorMsg(msg);
-      toast.error(msg);
+      setErrorMsg(error.response?.data?.message || "Invalid code");
     } finally {
       setLoading(false);
     }
@@ -126,13 +122,13 @@ const RegisterPage = () => {
           <form onSubmit={handleRegister}>
             <div style={{ marginBottom: 16 }}>
               <label style={labelStyle}>Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
+              <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setErrorMsg(""); }} required
                 placeholder="you@email.com" style={inputStyle} />
             </div>
             <div style={{ marginBottom: 16 }}>
               <label style={labelStyle}>Password</label>
               <input type="password" value={password}
-                onChange={(e) => { setPassword(e.target.value); setShowRules(true); }}
+                onChange={(e) => { setPassword(e.target.value); setErrorMsg(""); setShowRules(true); }}
                 onFocus={() => setShowRules(true)}
                 required placeholder="Create a strong password" style={inputStyle} />
 
@@ -154,7 +150,7 @@ const RegisterPage = () => {
             <div style={{ marginBottom: 24 }}>
               <label style={labelStyle}>Confirm Password</label>
               <input type="password" value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
+                onChange={(e) => { setConfirm(e.target.value); setErrorMsg(""); }}
                 required placeholder="••••••••" style={{
                   ...inputStyle,
                   borderColor: confirm && confirm !== password ? "#e5333a" : "#e4e9ef",
@@ -183,7 +179,7 @@ const RegisterPage = () => {
             </p>
             <div style={{ marginBottom: 24 }}>
               <label style={labelStyle}>Verification Code</label>
-              <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)} required
+              <input type="text" value={otp} onChange={(e) => { setOtp(e.target.value); setErrorMsg(""); }} required
                 placeholder="000000" maxLength={6}
                 style={{ ...inputStyle, fontSize: 28, fontWeight: 800, letterSpacing: 12, textAlign: "center" }}
               />
