@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { label: "Recover Deleted",to: "/trash",      icon: "♻️" },
   { label: "Friends",        to: "/friends",    icon: "🤝" },
   { label: "Copy Requests",  to: "/copy-requests", icon: "📋" },
+  { label: "Help",           to: "/help",          icon: "❓" },
 ];
 
 const Sidebar = () => {
