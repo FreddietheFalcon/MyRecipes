@@ -15,7 +15,6 @@ import FriendsPage from "./pages/FriendsPage";
 import FriendRecipesPage from "./pages/FriendRecipesPage";
 import FriendRecipeDetailPage from "./pages/FriendRecipeDetailPage";
 import CopyRequestsPage from "./pages/CopyRequestsPage";
-import HelpPage from "./pages/HelpPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 
 const PUBLIC_PATHS = ["/login", "/register", "/forgot-password"];
@@ -38,7 +37,6 @@ const AppRoutes = ({ isLoggedIn }) => (
         <Route path="/friends/:friendId/recipes" element={<FriendRecipesPage />} />
         <Route path="/friends/:friendId/recipes/:recipeId" element={<FriendRecipeDetailPage />} />
         <Route path="/copy-requests" element={<CopyRequestsPage />} />
-        <Route path="/help" element={<HelpPage />} />
       </>
     ) : (
       <Route path="*" element={<Navigate to="/login" replace />} />

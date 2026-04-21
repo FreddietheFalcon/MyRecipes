@@ -4,32 +4,40 @@ import api from "../lib/axios";
 import toast from "react-hot-toast";
 
 const NAV_ITEMS = [
-  { label: "Search",         to: "/",          icon: "🔍" },
-  { label: "Add Recipe",     to: "/create",    icon: "➕" },
-  { label: "Inventory",      to: "/inventory", icon: "🥫" },
-  { label: "Recover Deleted",to: "/trash",     icon: "♻️" },
-  { label: "Friends",        to: "/friends",   icon: "🤝" },
+  { label: "Search",         to: "/",           icon: "🔍" },
+  { label: "Add Recipe",     to: "/create",     icon: "➕" },
+  { label: "Inventory",      to: "/inventory",  icon: "🥫" },
+  { label: "Recover Deleted",to: "/trash",      icon: "♻️" },
+  { label: "Friends",        to: "/friends",    icon: "🤝" },
+  { label: "Copy Requests",  to: "/copy-requests", icon: "📋" },
 ];
 
 const Sidebar = () => {
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
   const fullPath = pathname + search;
-  const [pendingCount, setPendingCount] = useState(0);
+  const [pendingFriends, setPendingFriends] = useState(0);
+  const [pendingCopies, setPendingCopies] = useState(0);
+  const [userEmail, setUserEmail] = useState("");
 
   useEffect(() => {
-    const fetchPending = async () => {
+    const fetchBadges = async () => {
       try {
-        const res = await api.get("/friends");
-        const pending = res.data.filter(
-          (f) => f.status === "pending" && f.direction === "received"
+        const [friendsRes, copyRes, meRes] = await Promise.all([
+          api.get("/friends"),
+          api.get("/share-requests/incoming"),
+          api.get("/auth/me"),
+        ]);
+        setPendingFriends(
+          friendsRes.data.filter((f) => f.status === "pending" && f.direction === "received").length
         );
-        setPendingCount(pending.length);
+        setPendingCopies(copyRes.data.length);
+        setUserEmail(meRes.data.email);
       } catch {
-        // Not logged in or token expired
+        // Not logged in
       }
     };
-    fetchPending();
+    fetchBadges();
   }, []);
 
   const isActive = (to) => {
@@ -95,9 +103,26 @@ const Sidebar = () => {
         </span>
       </div>
 
+      {/* User email */}
+      {userEmail && (
+        <div style={{
+          fontSize: 11, fontWeight: 700, color: "var(--gray)",
+          background: "var(--gray-light)", borderRadius: 8,
+          padding: "6px 10px", marginBottom: 8,
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          letterSpacing: ".01em",
+        }} title={userEmail}>
+          👤 {userEmail}
+        </div>
+      )}
+
       {/* Nav links */}
       {NAV_ITEMS.map(({ label, to, icon }) => {
         const active = isActive(to);
+        const badge =
+          label === "Friends" ? pendingFriends :
+          label === "Copy Requests" ? pendingCopies : 0;
+
         return (
           <Link
             key={label}
@@ -121,13 +146,13 @@ const Sidebar = () => {
           >
             <span style={{ fontSize: "17px", lineHeight: 1 }}>{icon}</span>
             <span style={{ flex: 1 }}>{label}</span>
-            {label === "Friends" && pendingCount > 0 && (
+            {badge > 0 && (
               <span style={{
                 background: "#e5333a", color: "#fff",
                 borderRadius: 50, fontSize: 10, fontWeight: 800,
                 padding: "2px 7px", lineHeight: 1.4,
               }}>
-                {pendingCount}
+                {badge}
               </span>
             )}
           </Link>
