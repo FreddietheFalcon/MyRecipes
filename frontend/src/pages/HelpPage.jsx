@@ -183,13 +183,16 @@ const HelpPage = () => {
         {/* Content */}
         <div ref={contentRef} style={{ flex: 1, padding: "32px 40px", overflowY: "auto", maxHeight: "100vh" }}>
 
-          {/* Back to login when not logged in */}
-          {!isLoggedIn && (
-            <div style={{ marginBottom: 16 }}>
-              <Link to="/login" style={{ fontSize: 13, fontWeight: 700, color: "var(--green-dark)", textDecoration: "none" }}>← Back to Login</Link>
-            </div>
-          )}
-
+          <div style={{ marginBottom: 12 }}>
+            <button
+              onClick={() => window.history.back()}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                fontSize: 13, fontWeight: 700, color: "var(--gray)",
+                fontFamily: "'Nunito', sans-serif", padding: 0,
+              }}
+            >← Back</button>
+          </div>
           {/* Header */}
           <div style={{ marginBottom: 40, paddingBottom: 24, borderBottom: "2px solid var(--gray-mid)" }}>
 
