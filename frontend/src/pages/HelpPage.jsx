@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
+import Sidebar from "../components/Sidebar";
 
 const sections = [
   { id: "intro",        title: "1. Introduction" },
