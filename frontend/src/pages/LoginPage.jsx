@@ -156,6 +156,9 @@ const LoginPage = () => {
             <p style={{ textAlign: "center", marginTop: 8, fontSize: 13, color: "#b0b8c1", fontWeight: 600 }}>
               <Link to="/forgot-password" style={{ color: "#b0b8c1", fontWeight: 700, textDecoration: "none" }}>Forgot password?</Link>
             </p>
+            <p style={{ textAlign: "center", marginTop: 8, fontSize: 13, color: "#b0b8c1", fontWeight: 600 }}>
+              <Link to="/help" style={{ color: "#b0b8c1", fontWeight: 700, textDecoration: "none" }}>❓ Help</Link>
+            </p>
           </form>
         ) : (
           <form onSubmit={handleVerify}>

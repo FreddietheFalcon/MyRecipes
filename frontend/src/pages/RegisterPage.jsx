@@ -171,6 +171,9 @@ const RegisterPage = () => {
               Already have an account?{" "}
               <Link to="/login" style={{ color: "#5aaa10", fontWeight: 800, textDecoration: "none" }}>Sign in</Link>
             </p>
+            <p style={{ textAlign: "center", marginTop: 8, fontSize: 13, color: "#b0b8c1", fontWeight: 600 }}>
+              <Link to="/help" style={{ color: "#b0b8c1", fontWeight: 700, textDecoration: "none" }}>❓ Help</Link>
+            </p>
           </form>
         ) : (
           <form onSubmit={handleVerify}>

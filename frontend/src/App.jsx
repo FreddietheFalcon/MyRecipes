@@ -18,13 +18,14 @@ import CopyRequestsPage from "./pages/CopyRequestsPage";
 import HelpPage from "./pages/HelpPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 
-const PUBLIC_PATHS = ["/login", "/register", "/forgot-password"];
+const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/help"];
 
 const AppRoutes = ({ isLoggedIn }) => (
   <Routes>
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<RegisterPage />} />
     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+    <Route path="/help" element={<HelpPage />} />
     {isLoggedIn ? (
       <>
         <Route path="/" element={<HomePage />} />
@@ -38,7 +39,6 @@ const AppRoutes = ({ isLoggedIn }) => (
         <Route path="/friends/:friendId/recipes" element={<FriendRecipesPage />} />
         <Route path="/friends/:friendId/recipes/:recipeId" element={<FriendRecipeDetailPage />} />
         <Route path="/copy-requests" element={<CopyRequestsPage />} />
-        <Route path="/help" element={<HelpPage />} />
       </>
     ) : (
       <Route path="*" element={<Navigate to="/login" replace />} />

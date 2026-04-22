@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
-import Sidebar from "../components/Sidebar";
 
 const sections = [
   { id: "intro",        title: "1. Introduction" },
@@ -123,7 +122,14 @@ const Screenshot = ({ src, alt, caption }) => (
 
 const HelpPage = () => {
   const [activeId, setActiveId] = useState("intro");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const contentRef = useRef(null);
+
+  useEffect(() => {
+    import('../lib/axios').then(({ default: api }) => {
+      api.get('/auth/me').then(() => setIsLoggedIn(true)).catch(() => setIsLoggedIn(false));
+    });
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -144,7 +150,7 @@ const HelpPage = () => {
 
   return (
     <div className="shell">
-      <Sidebar />
+      {isLoggedIn && <Sidebar />}
       <main className="main-card" style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "row", gap: 0 }}>
 
         {/* Table of Contents */}
@@ -176,8 +182,19 @@ const HelpPage = () => {
         {/* Content */}
         <div ref={contentRef} style={{ flex: 1, padding: "32px 40px", overflowY: "auto", maxHeight: "100vh" }}>
 
+          {/* Back to login when not logged in */}
+          {!isLoggedIn && (
+            <div style={{ marginBottom: 16 }}>
+              <Link to="/login" style={{ fontSize: 13, fontWeight: 700, color: "var(--green-dark)", textDecoration: "none" }}>← Back to Login</Link>
+            </div>
+          )}
+
           {/* Header */}
           <div style={{ marginBottom: 40, paddingBottom: 24, borderBottom: "2px solid var(--gray-mid)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <Link to="/login" style={{ fontSize: 13, fontWeight: 700, color: "var(--gray)", textDecoration: "none" }}>← Back to Login</Link>
+              <Link to="/" style={{ fontSize: 13, fontWeight: 700, color: "var(--green-dark)", textDecoration: "none" }}>Go to App →</Link>
+            </div>
             <h1 style={{ fontFamily: "'Pacifico', cursive", fontSize: 28, color: "var(--green-dark)", margin: 0 }}>
               🍳 My Recipes — Help Guide
             </h1>
@@ -202,14 +219,7 @@ const HelpPage = () => {
                 <li>Recover accidentally deleted recipes within 30 days</li>
               </ul>
             </SubSection>
-            <SubSection title="How to Access My Recipes">
-              <Steps items={[
-                'Open a web browser (e.g., Google Chrome, Firefox, or Edge).',
-                'In the address bar at the top, type: <strong>https://myrecipes-yrhn.onrender.com</strong> and press Enter.',
-                'The Login page will appear. See Section 2 if you need to create an account first.',
-              ]} />
-              <Note>My Recipes works best on a desktop or laptop computer. The app may take up to 30 seconds to load if it has been inactive.</Note>
-            </SubSection>
+            <Note>My Recipes works best on a desktop or laptop computer. The app may take up to 30 seconds to load if it has been inactive.</Note>
           </Section>
 
           {/* ── Section 2: Creating an Account ── */}
@@ -409,7 +419,7 @@ const HelpPage = () => {
               <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", lineHeight: 1.7, marginBottom: 12 }}>
                 Friends' recipes appear on your home page in the All tab. Click any View Only recipe to see full details.
               </p>
-              <Tip>Click the ✕ button on a View Only recipe pill to hide it. Use "Show hidden" below the tabs to reveal hidden recipes.</Tip>
+              <Tip>Click the ✕ button on a View Only recipe to hide it. Use "Show hidden" below the tabs to reveal hidden recipes.</Tip>
             </SubSection>
 
             <SubSection title="Requesting a Copy of a Recipe">
@@ -480,7 +490,7 @@ const HelpPage = () => {
                 ["View friend's recipe", "Home page → click a View Only recipe"],
                 ["Request a recipe copy", "Open friend's recipe → 📋 Request Copy"],
                 ["Approve a copy request", "Sidebar → 📋 Copy Requests → ✓ Approve"],
-                ["Hide a friend's recipe", "Home page → click ✕ on a View Only recipe pill"],
+                ["Hide a friend's recipe", "Home page → click ✕ on a View Only recipe"],
                 ["Log out", "Sidebar → 🚪 Logout"],
               ]}
             />
