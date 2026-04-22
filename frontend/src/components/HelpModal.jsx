@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "react-router";
 
 const sections = [
   { id: "register",     title: "Creating an Account" },
@@ -57,7 +56,8 @@ const HelpModal = () => {
     <>
       {/* Trigger link */}
       <button
-        onClick={() => setOpen(true)}
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(true); }}
+        type="button"
         style={{
           background: "none", border: "none", cursor: "pointer",
           color: "#b0b8c1", fontWeight: 700, fontSize: 13,
@@ -131,10 +131,7 @@ const HelpModal = () => {
                     }}
                   >{s.title}</button>
                 ))}
-                <div style={{ height: 1, background: "#e4e9ef", margin: "12px 0" }} />
-                <Link to="/help" style={{ fontSize: 12, fontWeight: 700, color: "#5aaa10", textDecoration: "none" }}>
-                  📖 Full Help Guide →
-                </Link>
+
               </nav>
 
               {/* Content */}
