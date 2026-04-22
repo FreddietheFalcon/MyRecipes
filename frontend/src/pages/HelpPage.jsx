@@ -192,10 +192,7 @@ const HelpPage = () => {
 
           {/* Header */}
           <div style={{ marginBottom: 40, paddingBottom: 24, borderBottom: "2px solid var(--gray-mid)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <Link to="/login" style={{ fontSize: 13, fontWeight: 700, color: "var(--gray)", textDecoration: "none" }}>← Back to Login</Link>
-              <Link to="/" style={{ fontSize: 13, fontWeight: 700, color: "var(--green-dark)", textDecoration: "none" }}>Go to App →</Link>
-            </div>
+
             <h1 style={{ fontFamily: "'Pacifico', cursive", fontSize: 28, color: "var(--green-dark)", margin: 0 }}>
               🍳 My Recipes — Help Guide
             </h1>
