@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router";
+import HelpModal from "../components/HelpModal";
 import toast, { Toaster } from "react-hot-toast";
 import api from "../lib/axios";
 
@@ -172,7 +173,7 @@ const RegisterPage = () => {
               <Link to="/login" style={{ color: "#5aaa10", fontWeight: 800, textDecoration: "none" }}>Sign in</Link>
             </p>
             <p style={{ textAlign: "center", marginTop: 8, fontSize: 13, color: "#b0b8c1", fontWeight: 600 }}>
-              <Link to="/help" style={{ color: "#b0b8c1", fontWeight: 700, textDecoration: "none" }}>❓ Help</Link>
+              <HelpModal />
             </p>
           </form>
         ) : (
