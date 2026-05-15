@@ -365,7 +365,7 @@ const CreatePage = () => {
                 <div className="input-wrap" style={{ flex: 1 }}>
                   <input type="text" placeholder="Ingredient name" value={ing.name} onChange={(e) => updateIngredient(i, "name", e.target.value)} />
                 </div>
-                <div className="input-wrap" style={{ width: 110 }}>
+                <div className="input-wrap" style={{ width: 200 }}>
                   <input type="text" placeholder="e.g. 1 cup" value={ing.amount} onChange={(e) => updateIngredient(i, "amount", e.target.value)} />
                 </div>
                 {ingredients.length > 1 && (
