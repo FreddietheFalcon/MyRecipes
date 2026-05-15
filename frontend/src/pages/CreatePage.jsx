@@ -22,11 +22,17 @@ function validateStep(text) {
 }
 
 function validateComment(text) {
-  if (!text?.trim()) return null; // empty comments are filtered out
+  if (!text?.trim()) return null;
   if (text.length > 500) return "Comment must be 500 characters or less";
   if (!SAFE_TEXT_REGEX.test(text)) return "Comment contains invalid characters (< > { } [ ] are not allowed)";
   return null;
 }
+
+// ── URL Import via backend (keeps API key secure) ────────────────────────────
+const importFromUrl = async (url) => {
+  const res = await api.post("/import/url", { url });
+  return res.data;
+};
 
 const CreatePage = () => {
   const [name, setName] = useState("");
@@ -36,7 +42,35 @@ const CreatePage = () => {
   const [steps, setSteps] = useState([""]);
   const [comments, setComments] = useState([""]);
   const [loading, setLoading] = useState(false);
+  const [importUrl, setImportUrl] = useState("");
+  const [importing, setImporting] = useState(false);
   const navigate = useNavigate();
+
+  const handleImport = async () => {
+    if (!importUrl.trim()) { toast.error("Please enter a URL"); return; }
+    if (!importUrl.startsWith("http")) { toast.error("Please enter a valid URL starting with http"); return; }
+
+    setImporting(true);
+    const toastId = toast.loading("🔍 Reading recipe from URL...");
+    try {
+      const recipe = await importFromUrl(importUrl);
+      setName(recipe.name || "");
+      setServings(recipe.servings ? String(recipe.servings) : "");
+      setIngredients(
+        recipe.ingredients?.length
+          ? recipe.ingredients.map((i) => ({ name: i.name || "", amount: i.amount || "" }))
+          : [{ name: "", amount: "" }]
+      );
+      setSteps(recipe.steps?.length ? recipe.steps : [""]);
+      setComments(recipe.notes ? [recipe.notes] : [""]);
+      toast.success("Recipe imported! Review and save.", { id: toastId });
+      setImportUrl("");
+    } catch (error) {
+      toast.error(error.message || "Failed to import recipe", { id: toastId });
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const updateIngredient = (i, field, val) => {
     const updated = [...ingredients];
@@ -112,6 +146,39 @@ const CreatePage = () => {
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
           <Link to="/" className="btn-back">‹</Link>
           <h1 className="page-title">Add New Recipe</h1>
+        </div>
+
+        {/* URL Import */}
+        <div style={{
+          background: "var(--gray-light)", border: "1.5px solid var(--gray-mid)",
+          borderRadius: 16, padding: "16px 20px", marginBottom: 28,
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text)", marginBottom: 10, textTransform: "uppercase", letterSpacing: ".05em" }}>
+            🔗 Import from URL
+          </div>
+          <p style={{ fontSize: 12, color: "var(--gray)", fontWeight: 600, marginBottom: 12 }}>
+            Paste a link to any recipe webpage and we'll fill in the form automatically.
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <div className="input-wrap" style={{ flex: 1 }}>
+              <input
+                type="url"
+                placeholder="https://www.allrecipes.com/recipe/..."
+                value={importUrl}
+                onChange={(e) => setImportUrl(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleImport())}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleImport}
+              disabled={importing}
+              className="btn-primary"
+              style={{ opacity: importing ? 0.7 : 1, cursor: importing ? "not-allowed" : "pointer" }}
+            >
+              {importing ? "Importing..." : "Import"}
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit}>

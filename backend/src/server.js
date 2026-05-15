@@ -9,6 +9,7 @@ import inventoryRoutes from "./routes/inventoryRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import friendshipRoutes from "./routes/friendshipRoutes.js";
 import shareRequestRoutes from "./routes/shareRequestRoutes.js";
+import importRoutes from "./routes/importRoutes.js";
 import { connectDB } from "./config/db.js";
 import rateLimiter from "./middleware/rateLimiter.js";
 
@@ -31,6 +32,7 @@ app.use("/api/recipes", recipesRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/friends", friendshipRoutes);
 app.use("/api/share-requests", shareRequestRoutes);
+app.use("/api/import", importRoutes);
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
