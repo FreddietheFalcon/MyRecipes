@@ -138,8 +138,11 @@ Rules:
       // Extract text from Word document
       const result = await mammoth.extractRawText({ buffer });
       text = result.value.slice(0, 8000);
+    } else if (mimetype === "text/plain" || originalname.toLowerCase().endsWith(".txt")) {
+      // Plain text — just decode the buffer
+      text = buffer.toString("utf-8").slice(0, 8000);
     } else {
-      return res.status(400).json({ message: "Only PDF and Word (.docx) files are supported." });
+      return res.status(400).json({ message: "Only PDF, Word (.docx), and text (.txt) files are supported." });
     }
 
     const recipe = await extractRecipeFromText(text, translate);
@@ -148,5 +151,20 @@ Rules:
     console.error("Error in importFromFile", error);
     if (error instanceof SyntaxError) return res.status(422).json({ message: "Could not parse a recipe from that file." });
     res.status(500).json({ message: "Failed to import recipe from file." });
+  }
+}
+
+// ── POST /api/import/text ─────────────────────────────────────────────────────
+export async function importFromText(req, res) {
+  try {
+    const { text, translate } = req.body;
+    if (!text?.trim()) return res.status(400).json({ message: "Text is required" });
+
+    const recipe = await extractRecipeFromText(text.slice(0, 8000), translate);
+    res.status(200).json(recipe);
+  } catch (error) {
+    console.error("Error in importFromText", error);
+    if (error instanceof SyntaxError) return res.status(422).json({ message: "Could not parse a recipe from that text." });
+    res.status(500).json({ message: "Failed to import recipe from text." });
   }
 }

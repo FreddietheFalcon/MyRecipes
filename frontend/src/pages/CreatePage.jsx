@@ -42,6 +42,9 @@ const CreatePage = () => {
   const [sourceUrl, setSourceUrl] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [importingFile, setImportingFile] = useState(false);
+  const [pasteText, setPasteText] = useState("");
+  const [importingText, setImportingText] = useState(false);
+  const [importTab, setImportTab] = useState("url"); // "url" | "file" | "text"
   const navigate = useNavigate();
 
   const handleImport = async () => {
@@ -99,6 +102,31 @@ const CreatePage = () => {
       toast.error(error.response?.data?.message || "Failed to import file", { id: toastId });
     } finally {
       setImportingFile(false);
+    }
+  };
+
+  const handleTextImport = async () => {
+    if (!pasteText.trim()) { toast.error("Please paste some recipe text"); return; }
+    setImportingText(true);
+    const toastId = toast.loading(translate ? "🔍 Reading and translating recipe..." : "🔍 Reading recipe...");
+    try {
+      const res = await api.post("/import/text", { text: pasteText, translate });
+      const recipe = res.data;
+      setName(recipe.name || "");
+      setServings(recipe.servings ? String(recipe.servings) : "");
+      setIngredients(
+        recipe.ingredients?.length
+          ? recipe.ingredients.map((i) => ({ name: i.name || "", amount: i.amount || "" }))
+          : [{ name: "", amount: "" }]
+      );
+      setSteps(recipe.steps?.length ? recipe.steps : [""]);
+      setComments(recipe.notes ? [recipe.notes] : [""]);
+      toast.success("Recipe imported! Review and save.", { id: toastId });
+      setPasteText("");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to import recipe", { id: toastId });
+    } finally {
+      setImportingText(false);
     }
   };
 
@@ -179,84 +207,110 @@ const CreatePage = () => {
           <h1 className="page-title">Add New Recipe</h1>
         </div>
 
-        {/* URL Import */}
-        <div style={{
-          background: "var(--gray-light)", border: "1.5px solid var(--gray-mid)",
-          borderRadius: 16, padding: "16px 20px", marginBottom: 28,
-        }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text)", marginBottom: 6, textTransform: "uppercase", letterSpacing: ".05em" }}>
-            🔗 Import from URL
-          </div>
-          <p style={{ fontSize: 12, color: "var(--gray)", fontWeight: 600, marginBottom: 12 }}>
-            Paste a link to any recipe webpage and we'll fill in the form automatically. Works with Japanese recipe sites too!
-          </p>
-          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-            <div className="input-wrap" style={{ flex: 1 }}>
-              <input
-                type="url"
-                placeholder="https://www.allrecipes.com/recipe/... or Japanese recipe URL"
-                value={importUrl}
-                onChange={(e) => setImportUrl(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleImport())}
-              />
-            </div>
-            <button
-              type="button"
-              onClick={handleImport}
-              disabled={importing}
-              className="btn-primary"
-              style={{ opacity: importing ? 0.7 : 1, cursor: importing ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}
-            >
-              {importing ? "Importing..." : "Import"}
-            </button>
-          </div>
-          {/* Translate toggle */}
-          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
-            <input
-              type="checkbox"
-              checked={translate}
-              onChange={(e) => setTranslate(e.target.checked)}
-              style={{ width: 16, height: 16, accentColor: "var(--green)", cursor: "pointer" }}
-            />
-            Translate recipe to English
-          </label>
-        </div>
-
-        {/* File Import */}
+        {/* Import Section — tabbed */}
         <div style={{
           background: "var(--gray-light)", border: "1.5px solid var(--gray-mid)",
           borderRadius: 16, padding: "16px 20px", marginBottom: 20,
         }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text)", marginBottom: 6, textTransform: "uppercase", letterSpacing: ".05em" }}>
-            📄 Import from PDF or Word
+          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text)", marginBottom: 12, textTransform: "uppercase", letterSpacing: ".05em" }}>
+            ✨ Import Recipe
           </div>
-          <p style={{ fontSize: 12, color: "var(--gray)", fontWeight: 600, marginBottom: 12 }}>
-            Upload a PDF or Word (.docx) file containing a recipe.
-          </p>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <label style={{
-              flex: 1, display: "flex", alignItems: "center", gap: 8,
-              padding: "10px 14px", border: "1.5px dashed var(--gray-mid)",
-              borderRadius: 10, cursor: "pointer", background: "#fff",
-              fontSize: 13, fontWeight: 600, color: "var(--gray)",
-            }}>
-              <input
-                type="file"
-                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                style={{ display: "none" }}
-                onChange={(e) => setSelectedFile(e.target.files[0] || null)}
-              />
-              {selectedFile ? `📄 ${selectedFile.name}` : "Choose PDF or Word file..."}
+
+          {/* Tabs */}
+          <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+            {[
+              { id: "url",  label: "🔗 From URL" },
+              { id: "file", label: "📄 From File" },
+              { id: "text", label: "📋 Paste Text" },
+            ].map(({ id, label }) => (
+              <button key={id} type="button" onClick={() => setImportTab(id)} style={{
+                padding: "6px 14px", borderRadius: 50, fontSize: 12, fontWeight: 700,
+                fontFamily: "'Nunito', sans-serif", cursor: "pointer",
+                background: importTab === id ? "var(--green)" : "#fff",
+                color: importTab === id ? "#fff" : "var(--gray)",
+                border: importTab === id ? "1.5px solid var(--green)" : "1.5px solid var(--gray-mid)",
+              }}>{label}</button>
+            ))}
+          </div>
+
+          {/* URL tab */}
+          {importTab === "url" && (
+            <div>
+              <p style={{ fontSize: 12, color: "var(--gray)", fontWeight: 600, marginBottom: 10 }}>
+                Paste a link to any recipe webpage. Works with Japanese recipe sites too!
+              </p>
+              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                <div className="input-wrap" style={{ flex: 1 }}>
+                  <input type="url" placeholder="https://www.allrecipes.com/recipe/..."
+                    value={importUrl} onChange={(e) => setImportUrl(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleImport())} />
+                </div>
+                <button type="button" onClick={handleImport} disabled={importing} className="btn-primary"
+                  style={{ opacity: importing ? 0.7 : 1, cursor: importing ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}>
+                  {importing ? "Importing..." : "Import"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* File tab */}
+          {importTab === "file" && (
+            <div>
+              <p style={{ fontSize: 12, color: "var(--gray)", fontWeight: 600, marginBottom: 10 }}>
+                Upload a PDF, Word (.docx), or plain text (.txt) file.
+              </p>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <label style={{
+                  flex: 1, display: "flex", alignItems: "center", gap: 8,
+                  padding: "10px 14px", border: "1.5px dashed var(--gray-mid)",
+                  borderRadius: 10, cursor: "pointer", background: "#fff",
+                  fontSize: 13, fontWeight: 600, color: "var(--gray)",
+                }}>
+                  <input type="file"
+                    accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                    style={{ display: "none" }}
+                    onChange={(e) => setSelectedFile(e.target.files[0] || null)} />
+                  {selectedFile ? `📄 ${selectedFile.name}` : "Choose PDF, Word, or text file..."}
+                </label>
+                <button type="button" onClick={handleFileImport}
+                  disabled={importingFile || !selectedFile} className="btn-primary"
+                  style={{ opacity: (importingFile || !selectedFile) ? 0.5 : 1, cursor: (importingFile || !selectedFile) ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}>
+                  {importingFile ? "Importing..." : "Import"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Paste text tab */}
+          {importTab === "text" && (
+            <div>
+              <p style={{ fontSize: 12, color: "var(--gray)", fontWeight: 600, marginBottom: 10 }}>
+                Paste any recipe text — from a website, email, cookbook photo, or anywhere else.
+              </p>
+              <div className="textarea-wrap" style={{ marginBottom: 10 }}>
+                <textarea
+                  placeholder="Paste your recipe text here..."
+                  value={pasteText}
+                  onChange={(e) => setPasteText(e.target.value)}
+                  rows={6}
+                  style={{ resize: "vertical" }}
+                />
+              </div>
+              <button type="button" onClick={handleTextImport}
+                disabled={importingText || !pasteText.trim()} className="btn-primary"
+                style={{ opacity: (importingText || !pasteText.trim()) ? 0.5 : 1, cursor: (importingText || !pasteText.trim()) ? "not-allowed" : "pointer" }}>
+                {importingText ? "Importing..." : "Import Recipe"}
+              </button>
+            </div>
+          )}
+
+          {/* Translate toggle — shown for all tabs */}
+          <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--gray-mid)" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
+              <input type="checkbox" checked={translate} onChange={(e) => setTranslate(e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: "var(--green)", cursor: "pointer" }} />
+              Translate recipe to English
             </label>
-            <button
-              type="button"
-              onClick={handleFileImport}
-              disabled={importingFile || !selectedFile}
-              className="btn-primary"
-              style={{ opacity: (importingFile || !selectedFile) ? 0.5 : 1, cursor: (importingFile || !selectedFile) ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}
-            >
-              {importingFile ? "Importing..." : "Import"}
-            </button>
           </div>
         </div>
 

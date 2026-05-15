@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { importFromUrl, importFromFile } from "../controllers/importController.js";
+import { importFromUrl, importFromFile, importFromText } from "../controllers/importController.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -13,13 +13,15 @@ const upload = multer({
     const allowed = [
       "application/pdf",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "text/plain",
     ];
     if (allowed.includes(file.mimetype) ||
         file.originalname.toLowerCase().endsWith(".pdf") ||
-        file.originalname.toLowerCase().endsWith(".docx")) {
+        file.originalname.toLowerCase().endsWith(".docx") ||
+        file.originalname.toLowerCase().endsWith(".txt")) {
       cb(null, true);
     } else {
-      cb(new Error("Only PDF and Word (.docx) files are supported."));
+      cb(new Error("Only PDF, Word (.docx), and text (.txt) files are supported."));
     }
   },
 });
@@ -27,5 +29,6 @@ const upload = multer({
 router.use(requireAuth);
 router.post("/url", importFromUrl);
 router.post("/file", upload.single("file"), importFromFile);
+router.post("/text", importFromText);
 
 export default router;
