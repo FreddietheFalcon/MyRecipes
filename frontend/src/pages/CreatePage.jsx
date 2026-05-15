@@ -4,13 +4,13 @@ import { toast } from "react-hot-toast";
 import api from "../lib/axios";
 import Sidebar from "../components/Sidebar";
 
-// ── Frontend validation ───────────────────────────────────────────────────────
-const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\u00C0-\u024F\s'"!?.,\-_()\&@#%+=*/~]+$/;
+// ── Frontend validation (includes Japanese characters) ────────────────────────
+const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\u00C0-\u024F\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\u4e00-\u9fff\uff00-\uffef\s'"!?.,\-_()\&@#%+=*/~]+$/;
 
 function validateName(text, fieldName = "Name") {
   if (!text?.trim()) return `${fieldName} cannot be empty`;
   if (text.length > 100) return `${fieldName} must be 100 characters or less`;
-  if (!SAFE_TEXT_REGEX.test(text)) return `${fieldName} contains invalid characters (< > { } [ ] are not allowed)`;
+  if (!SAFE_TEXT_REGEX.test(text)) return `${fieldName} contains invalid characters`;
   return null;
 }
 
@@ -24,15 +24,9 @@ function validateStep(text) {
 function validateComment(text) {
   if (!text?.trim()) return null;
   if (text.length > 500) return "Comment must be 500 characters or less";
-  if (!SAFE_TEXT_REGEX.test(text)) return "Comment contains invalid characters (< > { } [ ] are not allowed)";
+  if (!SAFE_TEXT_REGEX.test(text)) return "Comment contains invalid characters";
   return null;
 }
-
-// ── URL Import via backend (keeps API key secure) ────────────────────────────
-const importFromUrl = async (url) => {
-  const res = await api.post("/import/url", { url });
-  return res.data;
-};
 
 const CreatePage = () => {
   const [name, setName] = useState("");
@@ -44,6 +38,8 @@ const CreatePage = () => {
   const [loading, setLoading] = useState(false);
   const [importUrl, setImportUrl] = useState("");
   const [importing, setImporting] = useState(false);
+  const [translate, setTranslate] = useState(false);
+  const [sourceUrl, setSourceUrl] = useState("");
   const navigate = useNavigate();
 
   const handleImport = async () => {
@@ -51,9 +47,10 @@ const CreatePage = () => {
     if (!importUrl.startsWith("http")) { toast.error("Please enter a valid URL starting with http"); return; }
 
     setImporting(true);
-    const toastId = toast.loading("🔍 Reading recipe from URL...");
+    const toastId = toast.loading(translate ? "🔍 Importing and translating recipe..." : "🔍 Reading recipe from URL...");
     try {
-      const recipe = await importFromUrl(importUrl);
+      const res = await api.post("/import/url", { url: importUrl, translate });
+      const recipe = res.data;
       setName(recipe.name || "");
       setServings(recipe.servings ? String(recipe.servings) : "");
       setIngredients(
@@ -63,10 +60,11 @@ const CreatePage = () => {
       );
       setSteps(recipe.steps?.length ? recipe.steps : [""]);
       setComments(recipe.notes ? [recipe.notes] : [""]);
+      setSourceUrl(importUrl); // save the URL for reference
       toast.success("Recipe imported! Review and save.", { id: toastId });
       setImportUrl("");
     } catch (error) {
-      toast.error(error.message || "Failed to import recipe", { id: toastId });
+      toast.error(error.response?.data?.message || error.message || "Failed to import recipe", { id: toastId });
     } finally {
       setImporting(false);
     }
@@ -126,6 +124,7 @@ const CreatePage = () => {
         ingredients: ingredients.filter((i) => i.name.trim()),
         steps: steps.filter((s) => s.trim()),
         comments: comments.filter((c) => c.trim()).map((text) => ({ text })),
+        sourceUrl: sourceUrl || undefined,
       });
       toast.success("Recipe created!");
       navigate("/");
@@ -153,17 +152,17 @@ const CreatePage = () => {
           background: "var(--gray-light)", border: "1.5px solid var(--gray-mid)",
           borderRadius: 16, padding: "16px 20px", marginBottom: 28,
         }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text)", marginBottom: 10, textTransform: "uppercase", letterSpacing: ".05em" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text)", marginBottom: 6, textTransform: "uppercase", letterSpacing: ".05em" }}>
             🔗 Import from URL
           </div>
           <p style={{ fontSize: 12, color: "var(--gray)", fontWeight: 600, marginBottom: 12 }}>
-            Paste a link to any recipe webpage and we'll fill in the form automatically.
+            Paste a link to any recipe webpage and we'll fill in the form automatically. Works with Japanese recipe sites too!
           </p>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
             <div className="input-wrap" style={{ flex: 1 }}>
               <input
                 type="url"
-                placeholder="https://www.allrecipes.com/recipe/..."
+                placeholder="https://www.allrecipes.com/recipe/... or Japanese recipe URL"
                 value={importUrl}
                 onChange={(e) => setImportUrl(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleImport())}
@@ -174,12 +173,38 @@ const CreatePage = () => {
               onClick={handleImport}
               disabled={importing}
               className="btn-primary"
-              style={{ opacity: importing ? 0.7 : 1, cursor: importing ? "not-allowed" : "pointer" }}
+              style={{ opacity: importing ? 0.7 : 1, cursor: importing ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}
             >
               {importing ? "Importing..." : "Import"}
             </button>
           </div>
+          {/* Translate toggle */}
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
+            <input
+              type="checkbox"
+              checked={translate}
+              onChange={(e) => setTranslate(e.target.checked)}
+              style={{ width: 16, height: 16, accentColor: "var(--green)", cursor: "pointer" }}
+            />
+            Translate recipe to English
+          </label>
         </div>
+
+        {/* Source URL display (after import) */}
+        {sourceUrl && (
+          <div style={{
+            background: "#f0f4ff", border: "1px solid #a0b8f0",
+            borderRadius: 10, padding: "8px 14px", marginBottom: 20,
+            display: "flex", alignItems: "center", gap: 8,
+            fontSize: 12, fontWeight: 600, color: "#3b6fd4",
+          }}>
+            🔗 Source:{" "}
+            <a href={sourceUrl} target="_blank" rel="noopener noreferrer"
+              style={{ color: "#3b6fd4", textDecoration: "underline", wordBreak: "break-all" }}>
+              {sourceUrl}
+            </a>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
 

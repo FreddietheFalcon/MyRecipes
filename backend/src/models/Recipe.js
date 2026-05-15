@@ -20,6 +20,9 @@ const recipeSchema = new mongoose.Schema(
     steps:       { type: [String], default: [] },
     comments:    { type: [commentSchema], default: [] },
 
+    // --- Source tracking ---
+    sourceUrl: { type: String, default: null }, // original URL if imported
+
     // --- Copy tracking ---
     copiedFromEmail:   { type: String, default: null }, // email of original owner if copied
     originalRecipeId: { type: mongoose.Schema.Types.ObjectId, default: null }, // points to the root original recipe

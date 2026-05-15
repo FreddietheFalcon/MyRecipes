@@ -1,7 +1,8 @@
 import Recipe from "../models/Recipe.js";
 
 // ── Input validation ──────────────────────────────────────────────────────────
-const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\u00C0-\u024F\s'"!?.,\-_()\&@#%+=*/~]+$/;
+// Includes Japanese: Hiragana, Katakana, Kanji, punctuation, fullwidth forms
+const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\u00C0-\u024F\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\u4e00-\u9fff\uff00-\uffef\s'"!?.,\-_()\&@#%+=*/~]+$/;
 const MAX_COMMENT_LENGTH = 500;
 const MAX_NAME_LENGTH = 100;
 const MAX_STEP_LENGTH = 1000;
@@ -9,7 +10,7 @@ const MAX_STEP_LENGTH = 1000;
 function validateComment(text) {
   if (!text?.trim()) return { valid: false, message: "Comment cannot be empty" };
   if (text.length > MAX_COMMENT_LENGTH) return { valid: false, message: `Comment must be ${MAX_COMMENT_LENGTH} characters or less` };
-  if (!SAFE_TEXT_REGEX.test(text)) return { valid: false, message: "Comment contains invalid characters. Angle brackets and code symbols are not allowed." };
+  if (!SAFE_TEXT_REGEX.test(text)) return { valid: false, message: "Comment contains invalid characters." };
   return { valid: true };
 }
 
@@ -29,7 +30,6 @@ function validateStep(text) {
 
 // ── Controllers ───────────────────────────────────────────────────────────────
 
-// GET /api/recipes — returns only the logged-in user's recipes
 export async function getAllRecipes(req, res) {
   try {
     const recipes = await Recipe.find({
@@ -43,7 +43,6 @@ export async function getAllRecipes(req, res) {
   }
 }
 
-// GET /api/recipes/trash — returns only the logged-in user's trashed recipes
 export async function getTrashedRecipes(req, res) {
   try {
     const trashed = await Recipe.find({
@@ -65,7 +64,6 @@ export async function getTrashedRecipes(req, res) {
   }
 }
 
-// GET /api/recipes/:id
 export async function getRecipeByID(req, res) {
   try {
     const recipe = await Recipe.findOne({
@@ -81,10 +79,9 @@ export async function getRecipeByID(req, res) {
   }
 }
 
-// POST /api/recipes
 export async function createRecipe(req, res) {
   try {
-    const { name, servings, status, ingredients, steps } = req.body;
+    const { name, servings, status, ingredients, steps, sourceUrl } = req.body;
 
     const nameCheck = validateName(name, "Recipe name");
     if (!nameCheck.valid) return res.status(400).json({ message: nameCheck.message });
@@ -105,8 +102,15 @@ export async function createRecipe(req, res) {
       }
     }
 
-    // Stamp the recipe with the logged-in user's id
-    const recipe = new Recipe({ userId: req.user.id, name, servings, status, ingredients, steps });
+    const recipe = new Recipe({
+      userId: req.user.id,
+      name,
+      servings,
+      status,
+      ingredients,
+      steps,
+      sourceUrl: sourceUrl || null,
+    });
     const saved = await recipe.save();
     res.status(201).json(saved);
   } catch (error) {
@@ -115,10 +119,9 @@ export async function createRecipe(req, res) {
   }
 }
 
-// PUT /api/recipes/:id
 export async function updateRecipe(req, res) {
   try {
-    const { name, servings, status, ingredients, steps, comments } = req.body;
+    const { name, servings, status, ingredients, steps, comments, sourceUrl } = req.body;
 
     if (name !== undefined) {
       const nameCheck = validateName(name, "Recipe name");
@@ -148,6 +151,7 @@ export async function updateRecipe(req, res) {
     if (ingredients !== undefined) update.ingredients = ingredients;
     if (steps !== undefined)       update.steps       = steps;
     if (comments !== undefined)    update.comments    = comments;
+    if (sourceUrl !== undefined)   update.sourceUrl   = sourceUrl;
 
     const updated = await Recipe.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.id, isDeleted: { $ne: true } },
@@ -162,7 +166,6 @@ export async function updateRecipe(req, res) {
   }
 }
 
-// DELETE /api/recipes/:id — soft delete
 export async function deleteRecipe(req, res) {
   try {
     const deleted = await Recipe.findOneAndUpdate(
@@ -178,7 +181,6 @@ export async function deleteRecipe(req, res) {
   }
 }
 
-// PUT /api/recipes/:id/restore
 export async function restoreRecipe(req, res) {
   try {
     const restored = await Recipe.findOneAndUpdate(
@@ -194,7 +196,6 @@ export async function restoreRecipe(req, res) {
   }
 }
 
-// POST /api/recipes/:id/comments
 export async function addComment(req, res) {
   try {
     const { text } = req.body;
@@ -214,7 +215,6 @@ export async function addComment(req, res) {
   }
 }
 
-// DELETE /api/recipes/:id/comments/:commentId
 export async function deleteComment(req, res) {
   try {
     const recipe = await Recipe.findOneAndUpdate(

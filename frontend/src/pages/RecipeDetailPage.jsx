@@ -6,7 +6,7 @@ import { LoaderIcon } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 
 // ── Frontend validation ───────────────────────────────────────────────────────
-const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\u00C0-\u024F\s'"!?.,\-_()\&@#%+=*/~]+$/;
+const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\u00C0-\u024F\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\u4e00-\u9fff\uff00-\uffef\s'"!?.,\-_()\&@#%+=*/~]+$/;
 
 function validateName(text, fieldName = "Name") {
   if (!text?.trim()) return `${fieldName} cannot be empty`;
@@ -186,6 +186,22 @@ const RecipeDetailPage = () => {
           {recipe.ingredients?.length > 0 && <div className="meta-chip">🥘 {recipe.ingredients.length} ingredients</div>}
           {recipe.steps?.length > 0 && <div className="meta-chip">📋 {recipe.steps.length} steps</div>}
         </div>
+
+        {/* Source URL */}
+        {recipe.sourceUrl && (
+          <div style={{
+            background: "#f0f4ff", border: "1px solid #a0b8f0",
+            borderRadius: 10, padding: "8px 14px", marginBottom: 20,
+            display: "flex", alignItems: "center", gap: 8,
+            fontSize: 12, fontWeight: 600, color: "#3b6fd4",
+          }}>
+            🔗 Source:{" "}
+            <a href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer"
+              style={{ color: "#3b6fd4", textDecoration: "underline", wordBreak: "break-all" }}>
+              {recipe.sourceUrl}
+            </a>
+          </div>
+        )}
 
         {/* Two column layout */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: 32, alignItems: "start" }}>
