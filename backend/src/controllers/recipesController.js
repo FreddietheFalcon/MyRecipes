@@ -2,7 +2,7 @@ import Recipe from "../models/Recipe.js";
 
 // ── Input validation ──────────────────────────────────────────────────────────
 // Includes Japanese: Hiragana, Katakana, Kanji, punctuation, fullwidth forms
-const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\u00C0-\u024F\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\u4e00-\u9fff\uff00-\uffef\s'"!?.,\-_()\&@#%+=*/~]+$/;
+const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\u00C0-\u024F\u00BC-\u00BE\u2150-\u215E\u2013-\u2014\u00B0\u2019\u201C\u201D\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\u4e00-\u9fff\uff00-\uffef\s'"!?.,\-_()\&@#%+=*/~]+$/;
 const MAX_COMMENT_LENGTH = 500;
 const MAX_NAME_LENGTH = 100;
 const MAX_STEP_LENGTH = 1000;
@@ -18,6 +18,13 @@ function validateName(text, fieldName = "Name") {
   if (!text?.trim()) return { valid: false, message: `${fieldName} cannot be empty` };
   if (text.length > MAX_NAME_LENGTH) return { valid: false, message: `${fieldName} must be ${MAX_NAME_LENGTH} characters or less` };
   if (!SAFE_TEXT_REGEX.test(text)) return { valid: false, message: `${fieldName} contains invalid characters` };
+  return { valid: true };
+}
+
+function validateAmount(text) {
+  // Amounts are free-form — just limit length, no character restriction
+  if (!text) return { valid: true };
+  if (text.length > 200) return { valid: false, message: "Amount must be 200 characters or less" };
   return { valid: true };
 }
 
@@ -91,6 +98,10 @@ export async function createRecipe(req, res) {
         if (ing.name?.trim()) {
           const ingCheck = validateName(ing.name, "Ingredient name");
           if (!ingCheck.valid) return res.status(400).json({ message: ingCheck.message });
+          if (ing.amount) {
+            const amtCheck = validateAmount(ing.amount);
+            if (!amtCheck.valid) return res.status(400).json({ message: amtCheck.message });
+          }
         }
       }
     }
@@ -133,6 +144,10 @@ export async function updateRecipe(req, res) {
         if (ing.name?.trim()) {
           const ingCheck = validateName(ing.name, "Ingredient name");
           if (!ingCheck.valid) return res.status(400).json({ message: ingCheck.message });
+          if (ing.amount) {
+            const amtCheck = validateAmount(ing.amount);
+            if (!amtCheck.valid) return res.status(400).json({ message: amtCheck.message });
+          }
         }
       }
     }

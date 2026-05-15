@@ -5,7 +5,7 @@ import api from "../lib/axios";
 import Sidebar from "../components/Sidebar";
 
 // ── Frontend validation (includes Japanese characters) ────────────────────────
-const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\u00C0-\u024F\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\u4e00-\u9fff\uff00-\uffef\s'"!?.,\-_()\&@#%+=*/~]+$/;
+const SAFE_TEXT_REGEX = /^[a-zA-Z0-9\u00C0-\u024F\u00BC-\u00BE\u2150-\u215E\u2013-\u2014\u00B0\u2019\u201C\u201D\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\u4e00-\u9fff\uff00-\uffef\s'"!?.,\-_()\&@#%+=*/~]+$/;
 
 function validateName(text, fieldName = "Name") {
   if (!text?.trim()) return `${fieldName} cannot be empty`;
@@ -158,10 +158,7 @@ const CreatePage = () => {
       if (ing.name.trim()) {
         const ingNameError = validateName(ing.name, "Ingredient name");
         if (ingNameError) { toast.error(ingNameError); return; }
-        if (ing.amount.trim()) {
-          const ingAmountError = validateName(ing.amount, "Ingredient amount");
-          if (ingAmountError) { toast.error(ingAmountError); return; }
-        }
+
       }
     }
 
