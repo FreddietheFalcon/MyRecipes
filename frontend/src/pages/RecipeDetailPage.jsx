@@ -201,7 +201,7 @@ const RecipeDetailPage = () => {
                   }}
                 />
               </div>
-              <div className="input-wrap" style={{ flex: "0 0 240px" }}>
+              <div className="input-wrap" style={{ flex: 1 }}>
                 <input type="text" placeholder="Amount" value={ing.amount}
                   onChange={(e) => {
                     const updated = [...recipe.ingredients];
