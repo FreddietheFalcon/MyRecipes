@@ -40,6 +40,8 @@ const CreatePage = () => {
   const [importing, setImporting] = useState(false);
   const [translate, setTranslate] = useState(false);
   const [sourceUrl, setSourceUrl] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [importingFile, setImportingFile] = useState(false);
   const navigate = useNavigate();
 
   const handleImport = async () => {
@@ -67,6 +69,36 @@ const CreatePage = () => {
       toast.error(error.response?.data?.message || error.message || "Failed to import recipe", { id: toastId });
     } finally {
       setImporting(false);
+    }
+  };
+
+  const handleFileImport = async () => {
+    if (!selectedFile) { toast.error("Please select a file"); return; }
+    setImportingFile(true);
+    const toastId = toast.loading(translate ? "📄 Reading and translating file..." : "📄 Reading recipe from file...");
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("translate", translate);
+      const res = await api.post("/import/file", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const recipe = res.data;
+      setName(recipe.name || "");
+      setServings(recipe.servings ? String(recipe.servings) : "");
+      setIngredients(
+        recipe.ingredients?.length
+          ? recipe.ingredients.map((i) => ({ name: i.name || "", amount: i.amount || "" }))
+          : [{ name: "", amount: "" }]
+      );
+      setSteps(recipe.steps?.length ? recipe.steps : [""]);
+      setComments(recipe.notes ? [recipe.notes] : [""]);
+      toast.success("Recipe imported! Review and save.", { id: toastId });
+      setSelectedFile(null);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to import file", { id: toastId });
+    } finally {
+      setImportingFile(false);
     }
   };
 
@@ -188,6 +220,44 @@ const CreatePage = () => {
             />
             Translate recipe to English
           </label>
+        </div>
+
+        {/* File Import */}
+        <div style={{
+          background: "var(--gray-light)", border: "1.5px solid var(--gray-mid)",
+          borderRadius: 16, padding: "16px 20px", marginBottom: 20,
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text)", marginBottom: 6, textTransform: "uppercase", letterSpacing: ".05em" }}>
+            📄 Import from PDF or Word
+          </div>
+          <p style={{ fontSize: 12, color: "var(--gray)", fontWeight: 600, marginBottom: 12 }}>
+            Upload a PDF or Word (.docx) file containing a recipe.
+          </p>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <label style={{
+              flex: 1, display: "flex", alignItems: "center", gap: 8,
+              padding: "10px 14px", border: "1.5px dashed var(--gray-mid)",
+              borderRadius: 10, cursor: "pointer", background: "#fff",
+              fontSize: 13, fontWeight: 600, color: "var(--gray)",
+            }}>
+              <input
+                type="file"
+                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                style={{ display: "none" }}
+                onChange={(e) => setSelectedFile(e.target.files[0] || null)}
+              />
+              {selectedFile ? `📄 ${selectedFile.name}` : "Choose PDF or Word file..."}
+            </label>
+            <button
+              type="button"
+              onClick={handleFileImport}
+              disabled={importingFile || !selectedFile}
+              className="btn-primary"
+              style={{ opacity: (importingFile || !selectedFile) ? 0.5 : 1, cursor: (importingFile || !selectedFile) ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}
+            >
+              {importingFile ? "Importing..." : "Import"}
+            </button>
+          </div>
         </div>
 
         {/* Source URL display (after import) */}
