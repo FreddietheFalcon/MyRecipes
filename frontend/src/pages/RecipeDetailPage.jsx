@@ -111,12 +111,12 @@ const RecipeDetailPage = () => {
       <main className="main-card">
 
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <Link to="/" className="btn-back">‹</Link>
             <div>
               <input
-                style={{ fontFamily: "'Pacifico', cursive", fontSize: 24, color: "var(--text)", border: "none", outline: "none", background: "transparent", width: "100%" }}
+                style={{ fontFamily: "'Pacifico', cursive", fontSize: 20, color: "var(--text)", border: "none", outline: "none", background: "transparent", width: "100%", wordBreak: "break-word" }}
                 value={recipe.name}
                 onChange={(e) => setRecipe({ ...recipe, name: e.target.value })}
               />
@@ -211,7 +211,7 @@ const RecipeDetailPage = () => {
         <div style={{ marginBottom: 32 }}>
           <div className="section-heading">Ingredients</div>
           {recipe.ingredients?.map((ing, i) => (
-            <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
               <div className="input-wrap" style={{ flex: 1 }}>
                 <input type="text" placeholder="Ingredient" value={ing.name}
                   onChange={(e) => {

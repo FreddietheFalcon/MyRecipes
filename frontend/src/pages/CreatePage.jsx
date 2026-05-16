@@ -214,7 +214,7 @@ const CreatePage = () => {
           </div>
 
           {/* Tabs */}
-          <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+          <div style={{ display: "flex", gap: 4, marginBottom: 16, flexWrap: "wrap" }}>
             {[
               { id: "url",  label: "🔗 From URL" },
               { id: "file", label: "📄 From File" },
@@ -361,7 +361,7 @@ const CreatePage = () => {
           <div className="field">
             <label className="field-label">Ingredients</label>
             {ingredients.map((ing, i) => (
-              <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
                 <div className="input-wrap" style={{ flex: 1 }}>
                   <input type="text" placeholder="Ingredient name" value={ing.name} onChange={(e) => updateIngredient(i, "name", e.target.value)} />
                 </div>
@@ -405,7 +405,7 @@ const CreatePage = () => {
           <div className="field">
             <label className="field-label">Comments / Notes</label>
             {comments.map((comment, i) => (
-              <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
                 <div className="input-wrap" style={{ flex: 1 }}>
                   <input
                     type="text"
