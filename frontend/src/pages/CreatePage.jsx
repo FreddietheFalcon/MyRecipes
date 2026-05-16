@@ -338,7 +338,7 @@ const CreatePage = () => {
           </div>
 
           {/* Servings + Status */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 16, marginBottom: 20 }}>
             <div className="field" style={{ marginBottom: 0 }}>
               <label className="field-label">Servings</label>
               <div className="input-wrap">
