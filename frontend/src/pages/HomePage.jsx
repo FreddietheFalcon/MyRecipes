@@ -77,17 +77,7 @@ const HomePage = () => {
             }
           })
         );
-        // Deduplicate friend recipes by originalRecipeId or name
-        // If two friends have the same recipe, only show it once
-        const flat = friendData.flat();
-        const seen = new Set();
-        const deduped = flat.filter(({ recipe: r }) => {
-          const key = r.originalRecipeId?.toString() || r.name.toLowerCase().trim();
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        });
-        setFriendRecipes(deduped);
+        setFriendRecipes(friendData.flat());
       } catch (error) {
         if (error.response?.status === 429) setIsRateLimited(true);
         else toast.error("Failed to load recipes");
@@ -139,7 +129,7 @@ const HomePage = () => {
         {isRateLimited && <RateLimitedUI />}
 
         {/* Top bar */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 28 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
           <div className="search-wrap">
             <span style={{ color: "var(--gray)", fontSize: 17 }}>🔍</span>
             <input
