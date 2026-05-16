@@ -124,12 +124,18 @@ const HomePage = () => {
 
   return (
     <div className="shell">
+      <style>{`
+        @media (max-width: 640px) {
+          .recipe-pill { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; border-radius: 14px !important; }
+          .recipe-pill-right { align-self: flex-end !important; width: 100% !important; display: flex !important; justify-content: flex-end !important; }
+        }
+      `}</style>
       <Sidebar />
       <main className="main-card" style={{ display: "flex", flexDirection: "column" }}>
         {isRateLimited && <RateLimitedUI />}
 
         {/* Top bar */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 28 }}>
           <div className="search-wrap">
             <span style={{ color: "var(--gray)", fontSize: 17 }}>🔍</span>
             <input
@@ -195,9 +201,9 @@ const HomePage = () => {
                 className="recipe-pill"
                 style={{ animationDelay: `${i * 0.05}s` }}
               >
-                <div className="recipe-pill-left">
+                <div className="recipe-pill-left" style={{ minWidth: 0, flex: 1, overflow: "hidden" }}>
                   <div>
-                    <div className="recipe-pill-name">{r.name}</div>
+                    <div className="recipe-pill-name" style={{ whiteSpace: "normal", wordBreak: "break-word" }}>{r.name}</div>
                     <div className="recipe-pill-meta">
                       {r.servings ? `👥 ${r.servings} servings` : ""}
                       {r.servings && r.ingredients?.length ? " · " : ""}
@@ -227,7 +233,7 @@ const HomePage = () => {
                     </div>
                   </div>
                 </div>
-                <div className="recipe-pill-right">
+                <div className="recipe-pill-right" style={{ flexShrink: 0 }}>
                   {isMine ? (
                     <span className={r.status === "keeper" ? "badge-keeper" : "badge-later"}>
                       {r.status === "keeper" ? "⭐ Keeper" : "🕐 Later"}
