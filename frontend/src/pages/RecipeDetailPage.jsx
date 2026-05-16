@@ -18,7 +18,8 @@ function validateName(text, fieldName = "Name") {
 function validateComment(text) {
   if (!text?.trim()) return null;
   if (text.length > 500) return "Comment must be 500 characters or less";
-  if (!SAFE_TEXT_REGEX.test(text)) return "Comment contains invalid characters (< > { } [ ] are not allowed)";
+  // Comments allow URLs and free text — only block actual HTML/script tags
+  if (/<script|<iframe|javascript:/i.test(text)) return "Comment contains invalid content";
   return null;
 }
 
@@ -169,6 +170,22 @@ const RecipeDetailPage = () => {
         </div>
 
         <div style={{ height: "1.5px", background: "var(--gray-mid)", marginBottom: 24 }} />
+
+        {/* Source URL */}
+        {recipe.sourceUrl && (
+          <div style={{
+            background: "#f0f4ff", border: "1px solid #a0b8f0",
+            borderRadius: 10, padding: "8px 14px", marginBottom: 20,
+            fontSize: 12, fontWeight: 600, color: "#3b6fd4",
+            display: "flex", alignItems: "center", gap: 8,
+          }}>
+            🔗 Source:{" "}
+            <a href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer"
+              style={{ color: "#3b6fd4", textDecoration: "underline", wordBreak: "break-all" }}>
+              {recipe.sourceUrl}
+            </a>
+          </div>
+        )}
 
         {/* Meta chips */}
         <div style={{ display: "flex", gap: 10, marginBottom: 28, flexWrap: "wrap", alignItems: "center" }}>

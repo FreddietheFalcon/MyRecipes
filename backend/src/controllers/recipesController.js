@@ -10,7 +10,8 @@ const MAX_STEP_LENGTH = 1000;
 function validateComment(text) {
   if (!text?.trim()) return { valid: false, message: "Comment cannot be empty" };
   if (text.length > MAX_COMMENT_LENGTH) return { valid: false, message: `Comment must be ${MAX_COMMENT_LENGTH} characters or less` };
-  if (!SAFE_TEXT_REGEX.test(text)) return { valid: false, message: "Comment contains invalid characters." };
+  // Comments allow URLs and free text — only block actual script injection
+  if (/<script|<iframe|javascript:/i.test(text)) return { valid: false, message: "Comment contains invalid content" };
   return { valid: true };
 }
 
