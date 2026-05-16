@@ -147,7 +147,7 @@ const HomePage = () => {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Link to="/create" className="btn-outline-red">+ Add Recipe</Link>
+          <Link to="/create" className="btn-outline-red">+ Add</Link>
         </div>
 
         {/* Tabs */}
