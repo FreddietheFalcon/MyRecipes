@@ -41,7 +41,11 @@ const RegisterPage = () => {
 
     setLoading(true);
     try {
-      await api.post("/auth/register", { email, password });
+      const regRes = await api.post("/auth/register", { email, password });
+      if (regRes.data.skipOtp) {
+        window.location.href = "/";
+        return;
+      }
       setStep("otp");
       toast.success("Account created! Check your email for a verification code.");
     } catch (error) {
@@ -57,8 +61,7 @@ const RegisterPage = () => {
     setLoading(true);
     try {
       await api.post("/auth/verify-otp", { email, otp });
-      toast.success("Email verified! Welcome to My Recipes 🍳");
-      navigate("/");
+      window.location.href = "/";
     } catch (error) {
       setErrorMsg(error.response?.data?.message || "Invalid code");
     } finally {

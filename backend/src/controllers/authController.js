@@ -61,11 +61,18 @@ export async function register(req, res) {
     const passwordHash = await bcrypt.hash(password, 12);
     await User.create({ email, passwordHash });
 
-    const otp = generateOTP();
-    await redis.set(`otp:${email}`, otp, { ex: 600 });
-    await sendOTPEmail(email, otp);
+    // ── 2FA DISABLED — to re-enable: uncomment the 4 lines below and remove the 5 lines after ──
+    // const otp = generateOTP();
+    // await redis.set(`otp:${email}`, otp, { ex: 600 });
+    // await sendOTPEmail(email, otp);
+    // res.status(201).json({ message: "Account created. Check your email for a verification code.", email });
 
-    res.status(201).json({ message: "Account created. Check your email for a verification code.", email });
+    const newUser = await User.findOne({ email });
+    newUser.isVerified = true;
+    await newUser.save();
+    const token = issueJWT(newUser);
+    res.cookie("token", token, cookieOptions);
+    res.status(201).json({ message: "Account created successfully.", skipOtp: true });
   } catch (error) {
     console.error("Error in register controller", error);
     res.status(500).json({ message: "Internal server error" });
@@ -87,11 +94,15 @@ export async function login(req, res) {
 
     if (!user.isVerified) return res.status(403).json({ message: "Please verify your email first", email });
 
-    const otp = generateOTP();
-    await redis.set(`otp:${email}`, otp, { ex: 600 });
-    await sendOTPEmail(email, otp);
+    // ── 2FA DISABLED — to re-enable: uncomment the 4 lines below and remove the 4 lines after ──
+    // const otp = generateOTP();
+    // await redis.set(`otp:${email}`, otp, { ex: 600 });
+    // await sendOTPEmail(email, otp);
+    // res.status(200).json({ message: "Check your email for a login code.", email });
 
-    res.status(200).json({ message: "Check your email for a login code.", email });
+    const token = issueJWT(user);
+    res.cookie("token", token, cookieOptions);
+    res.status(200).json({ message: "Logged in successfully.", user: { email: user.email }, skipOtp: true });
   } catch (error) {
     console.error("Error in login controller", error);
     res.status(500).json({ message: "Internal server error" });

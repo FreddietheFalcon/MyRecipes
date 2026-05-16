@@ -155,7 +155,10 @@ const RecipeDetailPage = () => {
               </div>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button className="btn-ghost" onClick={() => window.print()} style={{ color: "var(--green-dark)", borderColor: "var(--green)" }}>
+              🖨 Print
+            </button>
             <button className="btn-primary" onClick={handleSave} disabled={saving}>
               {saving ? "Saving..." : "✓ Save Changes"}
             </button>

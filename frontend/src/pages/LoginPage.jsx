@@ -25,8 +25,13 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.post("/auth/login", { email, password });
+      const loginRes = await api.post("/auth/login", { email, password });
       setErrorMsg("");
+      // If 2FA is disabled, JWT is issued immediately
+      if (loginRes.data.skipOtp) {
+        window.location.href = "/";
+        return;
+      }
       setStep("otp");
       toast.success("Check your email for a login code!");
     } catch (error) {

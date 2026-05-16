@@ -495,10 +495,156 @@ body {
 
 .toast.show { transform: translateX(-50%) translateY(0); }
 
-/* ── Responsive ── */
+/* ── Responsive — Tablet ── */
+@media (max-width: 900px) {
+  .shell {
+    max-width: 100%;
+    padding: 16px;
+    gap: 16px;
+  }
+  .sidebar {
+    width: 200px;
+  }
+  .main-card {
+    padding: 24px 20px 32px;
+  }
+}
+
+/* ── Responsive — Mobile ── */
 @media (max-width: 640px) {
-  .shell { flex-direction: column; padding: 16px; }
-  .sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; padding: 16px; gap: 6px; position: static; }
-  .brand { margin-bottom: 0; }
-  .main-card { padding: 20px 16px 28px; }
+  .shell {
+    flex-direction: column;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  /* Sidebar becomes a horizontal scrollable nav bar on mobile */
+  .sidebar {
+    width: 100%;
+    position: static;
+    padding: 12px 16px;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    align-items: center;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  .brand { margin-bottom: 0; flex-shrink: 0; }
+  .brand-name { display: none; }
+
+  .main-card {
+    padding: 16px 14px 24px;
+    border-radius: 16px;
+  }
+
+  .page-title { font-size: 20px; }
+
+  /* Search bar */
+  .search-wrap { padding: 0 12px; }
+  .search-wrap input { font-size: 14px; padding: 10px 0; }
+
+  /* Recipe pills */
+  .recipe-pill { padding: 10px 14px; border-radius: 16px; }
+  .recipe-pill-name { font-size: 14px; }
+
+  /* Buttons */
+  .btn-primary { padding: 9px 16px; font-size: 13px; }
+  .btn-ghost { padding: 8px 14px; font-size: 13px; }
+  .btn-outline-red { padding: 9px 16px; font-size: 13px; }
+
+  /* Tabs */
+  .tab-item { padding: 8px 14px; font-size: 13px; }
+
+  /* Form inputs */
+  .input-wrap input, .input-wrap select { font-size: 14px; padding: 11px 0; }
+  .textarea-wrap textarea { font-size: 14px; }
+
+  /* Stack top bar on home page */
+  .search-wrap { min-width: 0; }
+}
+
+/* ── Print styles ── */
+@media print {
+  /* Hide everything except the recipe content */
+  .shell { display: block !important; padding: 0 !important; }
+  aside, .sidebar { display: none !important; }
+  .main-card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  /* Hide UI controls */
+  .btn-primary, .btn-ghost, .btn-back, .btn-outline-red,
+  button, .section-divider { display: none !important; }
+
+  /* Show inputs as plain text */
+  input, textarea, select {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    font-size: 12pt !important;
+    color: #000 !important;
+    pointer-events: none;
+  }
+
+  .input-wrap {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  .textarea-wrap {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  /* Recipe name */
+  input[style*="Pacifico"] {
+    font-size: 22pt !important;
+    font-weight: bold !important;
+  }
+
+  /* Section headings */
+  .section-heading {
+    font-size: 11pt !important;
+    font-weight: 800 !important;
+    color: #333 !important;
+    border-bottom: 1px solid #ccc !important;
+    padding-bottom: 4px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .meta-chip {
+    border: 1px solid #ccc !important;
+    font-size: 10pt !important;
+  }
+
+  /* Ingredient rows */
+  .ingredient-row {
+    display: flex !important;
+    gap: 16px !important;
+    margin-bottom: 4px !important;
+  }
+
+  /* Page breaks */
+  body { font-size: 12pt; color: #000; }
+  h1, h2 { page-break-after: avoid; }
+  section { page-break-inside: avoid; }
+
+  /* Source URL */
+  a { color: #000 !important; text-decoration: underline; }
+
+  /* Hide toasts and modals */
+  .toast, [class*="modal"] { display: none !important; }
 }
