@@ -128,6 +128,8 @@ const HomePage = () => {
         @media (max-width: 640px) {
           .recipe-pill { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; border-radius: 14px !important; }
           .recipe-pill-right { align-self: flex-end !important; width: 100% !important; display: flex !important; justify-content: flex-end !important; }
+          .top-bar { flex-wrap: wrap !important; }
+          .top-bar .btn-outline-red { width: 100% !important; justify-content: center !important; }
         }
       `}</style>
       <Sidebar />
